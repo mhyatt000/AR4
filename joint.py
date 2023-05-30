@@ -17,6 +17,8 @@ class Joint:
 
     def __init__(self):
 
+        self.name = "Unnamed Joint"
+
         # int
         self.open_loop_stat = None
         self.cal_stat = [None, None]

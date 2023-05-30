@@ -1,46 +1,21 @@
+""" NOTE
+dont use black yet... 
+the command expands 20+ lines
+"""
 
 def calRobotAll():
+
     ##### STAGE 1 ########
-    command = (
-        "LL"
-        + "A"
-        + str(J1CalStatVal)
-        + "B"
-        + str(J2CalStatVal)
-        + "C"
-        + str(J3CalStatVal)
-        + "D"
-        + str(J4CalStatVal)
-        + "E"
-        + str(J5CalStatVal)
-        + "F"
-        + str(J6CalStatVal)
-        + "G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
+    command = ( "LL" + "A" + str(J1CalStatVal) + "B" + str(J2CalStatVal) + "C" + str(J3CalStatVal) + "D" + str(J4CalStatVal) + "E" + str(J5CalStatVal) + "F"
+        + str(J6CalStatVal) + "G0H0I0" + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff) + "M" + str(J4calOff) + "N" + str(J5calOff)
+        + "O" + str(J6calOff) + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff) + "\n")
+
     ser.write(command.encode())
     cmdSentEntryField.delete(0, "end")
     cmdSentEntryField.insert(0, command)
     ser.flushInput()
     response = str(ser.readline().strip(), "utf-8")
+
     if response[:1] == "A":
         displayPosition(response)
         message = "Auto Calibration Stage 1 Successful"
@@ -63,6 +38,7 @@ def calRobotAll():
         + int(J5CalStatVal2)
         + int(J6CalStatVal2)
     )
+
     if CalStatVal2 > 0:
         command = (
             "LL"
@@ -104,6 +80,7 @@ def calRobotAll():
         cmdSentEntryField.insert(0, command)
         ser.flushInput()
         response = str(ser.readline().strip(), "utf-8")
+
         if response[:1] == "A":
             displayPosition(response)
             message = "Auto Calibration Stage 2 Successful"
@@ -119,392 +96,122 @@ def calRobotAll():
         pickle.dump(value, open("ErrorLog", "wb"))
 
 
-def calRobotJ1():
-    command = (
-        "LLA1B0C0D0E0F0G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
+def cal(joint, command):
+    """basic calibrate"""
+
     ser.write(command.encode())
     cmdSentEntryField.delete(0, "end")
     cmdSentEntryField.insert(0, command)
     ser.flushInput()
     response = str(ser.readline().strip(), "utf-8")
+
     if response[:1] == "A":
         displayPosition(response)
-        message = "J1 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
+        message = f"{joint.name} Calibrated Successfully"
+        style="OK.TLabel"
     else:
-        message = "J1 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
+        message = f"{joint.name} Calibrated Failed"
+        style="Alarm.TLabel"
+
+    almStatusLab.config(text=message, style="Alarm.TLabel")
+    almStatusLab2.config(text=message, style="Alarm.TLabel")
+
+    now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
+    tab6.ElogView.insert(END, f"{now} - {message}")
     value = tab6.ElogView.get(0, END)
     pickle.dump(value, open("ErrorLog", "wb"))
 
+
+def calRobotJ1():
+    command = (
+        "LLA1B0C0D0E0F0G0H0I0"
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
+
+    cal(1, command)
 
 def calRobotJ2():
     command = (
         "LLA0B1C0D0E0F0G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J2 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J2 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(2, command)
 
 def calRobotJ3():
     command = (
         "LLA0B0C1D0E0F0G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J3 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J3 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(3, command)
 
 def calRobotJ4():
     command = (
         "LLA0B0C0D1E0F0G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J4 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J4 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(4, command)
 
 def calRobotJ5():
     command = (
         "LLA0B0C0D0E1F0G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J5 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J5 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(5, command)
 
 def calRobotJ6():
     command = (
         "LLA0B0C0D0E0F1G0H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J6 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J6 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
+
+    cal(6, command)
 
 
 def calRobotJ7():
     command = (
         "LLA0B0C0D0E0F0G1H0I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J7 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J7 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(7, command)
 
 def calRobotJ8():
     command = (
         "LLA0B0C0D0E0F0G0H1I0"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J8 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J8 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(8, command)
 
 def calRobotJ9():
     command = (
         "LLA0B0C0D0E0F0G0H0I1"
-        + "J"
-        + str(J1calOff)
-        + "K"
-        + str(J2calOff)
-        + "L"
-        + str(J3calOff)
-        + "M"
-        + str(J4calOff)
-        + "N"
-        + str(J5calOff)
-        + "O"
-        + str(J6calOff)
-        + "P"
-        + str(J7calOff)
-        + "Q"
-        + str(J8calOff)
-        + "R"
-        + str(J9calOff)
-        + "\n"
-    )
-    ser.write(command.encode())
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
-    ser.flushInput()
-    response = str(ser.readline().strip(), "utf-8")
-    if response[:1] == "A":
-        displayPosition(response)
-        message = "J9 Calibrated Successfully"
-        almStatusLab.config(text=message, style="OK.TLabel")
-        almStatusLab2.config(text=message, style="OK.TLabel")
-    else:
-        message = "J9 Calibrated Failed"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-    Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(END, Curtime + " - " + message)
-    value = tab6.ElogView.get(0, END)
-    pickle.dump(value, open("ErrorLog", "wb"))
+        + "J" + str(J1calOff) + "K" + str(J2calOff) + "L" + str(J3calOff)
+        + "M" + str(J4calOff) + "N" + str(J5calOff) + "O" + str(J6calOff)
+        + "P" + str(J7calOff) + "Q" + str(J8calOff) + "R" + str(J9calOff)
+        + "\n")
 
+    cal(9, command)
 
 def calRobotMid():
     print("foo")
@@ -582,33 +289,20 @@ def calExtAxis():
         command=J9sliderUpdate,
     )
 
-    command = (
-        "CE"
-        + "A"
-        + str(J7axisLimPos)
-        + "B"
-        + str(J7rotation)
-        + "C"
-        + str(J7steps)
-        + "D"
-        + str(J8axisLimPos)
-        + "E"
-        + str(J8rotation)
-        + "F"
-        + str(J8steps)
-        + "G"
-        + str(J9axisLimPos)
-        + "H"
-        + str(J9rotation)
-        + "I"
-        + str(J9steps)
-        + "\n"
-    )
+    command = ( "CE" + "A" + str(J7axisLimPos) + "B" + str(J7rotation)
+        + "C" + str(J7steps) + "D" + str(J8axisLimPos) + "E" + str(J8rotation)
+        + "F" + str(J8steps) + "G" + str(J9axisLimPos) + "H" + str(J9rotation)
+        + "I" + str(J9steps) + "\n")
+
     ser.write(command.encode())
     ser.flushInput()
     time.sleep(0.2)
     response = ser.read()
 
+def zero():
+    """basic zero axis"""
+
+    pass
 
 def zeroAxis7():
     command = "Z7" + "\n"
