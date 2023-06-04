@@ -1,3 +1,4 @@
+from exc import commands 
 
 ###############################################################################################################################################################
 ### EXECUTION DEFS ######################################################################################################################### EXECUTION DEFS ###
@@ -65,22 +66,30 @@ def runProg():
     t = threading.Thread(target=threadProg)
     t.start()
 
-
-def stepFwd():
+def alm_ready():
+    """docstring"""
 
     almStatusLab.config(text="SYSTEM READY", style="OK.TLabel")
     almStatusLab2.config(text="SYSTEM READY", style="OK.TLabel")
 
+
+def step(colors, val):
+    """docstring"""
+
+    alm_ready()
     executeRow()
+
     selRow = tab1.progView.curselection()[0]
     last = tab1.progView.index("end")
+
     for row in range(0, selRow):
-        tab1.progView.itemconfig(row, {"fg": "dodger blue"})
-    tab1.progView.itemconfig(selRow, {"fg": "blue2"})
+        tab1.progView.itemconfig(row, {"fg": colors[0]})
+    tab1.progView.itemconfig(selRow, {"fg":colors[1]})
     for row in range(selRow + 1, last):
-        tab1.progView.itemconfig(row, {"fg": "black"})
+        tab1.progView.itemconfig(row, {"fg":colors[2]})
+
     tab1.progView.selection_clear(0, END)
-    selRow += 1
+    selRow += val
     tab1.progView.select_set(selRow)
     try:
         selRow = tab1.progView.curselection()[0]
@@ -89,35 +98,21 @@ def stepFwd():
     except:
         curRowEntryField.delete(0, "end")
         curRowEntryField.insert(0, "---")
+
+
+
+def stepFwd():
+    colors = [ "dodger blue", "blue2", "black" ]
+    step(colors,1)
 
 
 def stepRev():
-    almStatusLab.config(text="SYSTEM READY", style="OK.TLabel")
-    almStatusLab2.config(text="SYSTEM READY", style="OK.TLabel")
-    executeRow()
-    selRow = tab1.progView.curselection()[0]
-    last = tab1.progView.index("end")
-    for row in range(0, selRow):
-        tab1.progView.itemconfig(row, {"fg": "black"})
-    tab1.progView.itemconfig(selRow, {"fg": "red"})
-    for row in range(selRow + 1, last):
-        tab1.progView.itemconfig(row, {"fg": "tomato2"})
-    tab1.progView.selection_clear(0, END)
-    selRow -= 1
-    tab1.progView.select_set(selRow)
-    try:
-        selRow = tab1.progView.curselection()[0]
-        curRowEntryField.delete(0, "end")
-        curRowEntryField.insert(0, selRow)
-    except:
-        curRowEntryField.delete(0, "end")
-        curRowEntryField.insert(0, "---")
-
+    colors = [ "black", "red", "tomato2" ]
+    step(colors,-1)
 
 def stopProg():
-    global cmdType
-    global splineActive
-    global stopQueue
+    cmdType, splineActive, stopQueue = None,None,None
+
     lastProg = ""
     tab1.runTrue = 0
     almStatusLab.config(text="PROGRAM STOPPED", style="Alarm.TLabel")
@@ -125,12 +120,14 @@ def stopProg():
 
 
 def executeRow():
+
     global J1AngCur
     global J2AngCur
     global J3AngCur
     global J4AngCur
     global J5AngCur
     global J6AngCur
+
     global calStat
     global rowinproc
     global LineDist
@@ -151,33 +148,11 @@ def executeRow():
 
     ##Call Program##
     if cmdType == "Call P":
-        if moveInProc == 1:
-            moveInProc == 2
-        tab1.lastRow = tab1.progView.curselection()[0]
-        tab1.lastProg = ProgEntryField.get()
-        programIndex = command.find("Program -")
-        progNum = str(command[programIndex + 10 :])
-        ProgEntryField.delete(0, "end")
-        ProgEntryField.insert(0, progNum)
-        loadProg()
-        time.sleep(0.4)
-        index = 0
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(index)
+        commands.call_prog()
 
     ##Return Program##
     if cmdType == "Return":
-        if moveInProc == 1:
-            moveInProc == 2
-        lastRow = tab1.lastRow
-        lastProg = tab1.lastProg
-        ProgEntryField.delete(0, "end")
-        ProgEntryField.insert(0, lastProg)
-        loadProg()
-        time.sleep(0.4)
-        index = 0
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(lastRow)
+        commands.return_prog()
 
     ##Test Limit Switches
     if cmdType == "Test L":

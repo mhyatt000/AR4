@@ -1,29 +1,32 @@
+import datetime
+import math
 from multiprocessing.resource_sharer import stop
+import os
 from os import execv
+import pathlib
+import pickle
+import threading
+import time
 from tkinter import *
+from tkinter import messagebox, simpledialog, ttk
+import tkinter.messagebox
 from tkinter.ttk import *
-from tkinter import ttk
-from tkinter import simpledialog
-from ttkthemes import ThemedStyle
-from tkinter import messagebox
+import webbrowser
+
 from PIL import Image, ImageTk
+import cv2
 from matplotlib import pyplot as plt
+import numpy as np
+from numpy import mean
+import serial
+from ttkthemes import ThemedStyle
+
+from program import *
+from teach import *
+from exc.execution import *
+
 
 # from pygrabber.dshow_graph import FilterGraph
-
-import pickle
-import serial
-import time
-import threading
-import math
-import tkinter.messagebox
-import webbrowser
-import numpy as np
-import datetime
-import cv2
-import pathlib
-import os
-from numpy import mean
 
 DIR = pathlib.Path(__file__).parent.resolve()
 
@@ -51,7 +54,7 @@ def on_closing():
 # root.wm_protocol("WM_DELETE_WINDOW", on_closing)
 
 JogStepsStat = IntVar()
-global xboxUse
+xboxUse = None
 
 IncJogStat = IntVar()
 fullRot = IntVar()
@@ -67,7 +70,7 @@ SplineTrue = False
 nb = tkinter.ttk.Notebook(root, width=1536, height=792)
 nb.place(x=0, y=0)
 
-tabs = [tkinter.ttk.Frame(nb) for _ in range (7)]
+tabs = {str(i):tkinter.ttk.Frame(nb) for i in range(1,7+1)}
 tabnames = [
     " Main Controls ",
     "  Config Settings  ",
@@ -77,7 +80,7 @@ tabnames = [
     "      Log      ",
     "   Info    ",
 ]
-for tab, name in zip(tabs, tabnames):
+for tab, name in zip(tabs.values(), tabnames):
     nb.add(tab, text=name)
 
 cam_on = False
@@ -87,13 +90,14 @@ cap = None
 ### STARTUP DEFS ################################################################################################################# COMMUNICATION DEFS ###
 ###############################################################################################################################################################
 
+
 def startup():
-    global moveInProc
     moveInProc = 0
     toolFrame()
     calExtAxis()
     sendPos()
     requestPos()
+
 
 ###############################################################################################################################################################
 ### COMMUNICATION DEFS ################################################################################################################# COMMUNICATION DEFS ###
@@ -101,12 +105,13 @@ def startup():
 
 serials = [None, None]
 
+
 def setCom():
 
     now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
     boards = ["TEENSY 4.1 CONTROLLER", "ARDUINO IO BOARD"]
 
-    def set_status(text,style):
+    def set_status(text, style):
         almStatusLab.config(text=text, style=style)
         almStatusLab2.config(text=text, style=style)
 
@@ -114,8 +119,7 @@ def setCom():
         # port = "COM" + comPortEntryField.get()
         # baud = 9600
 
-
-        ser2=None
+        ser2 = None
         if ser2:
             pass
         """ 
@@ -128,10 +132,10 @@ def setCom():
         port = "/dev/cu.usbmodem123843001"
         serials[0] = serial.Serial(port, baud)
 
-        text=f"COMMUNICATIONS STARTED WITH {board}"
-        style="OK.TLabel"
+        text = f"COMMUNICATIONS STARTED WITH {board}"
+        style = "OK.TLabel"
 
-        set_status(text,style)
+        set_status(text, style)
         tab6.ElogView.insert(END, f"{now} - {text}")
         value = tab6.ElogView.get(0, END)
         pickle.dump(value, open("ErrorLog", "wb"))
@@ -142,794 +146,356 @@ def setCom():
 
     except Exception as ex:
 
-        text=f"UNABLE TO ESTABLISH COMMUNICATIONS WITH {board}",
-        style="Alarm.TLabel",
+        text = (f"UNABLE TO ESTABLISH COMMUNICATIONS WITH {board}",)
+        style = ("Alarm.TLabel",)
 
-        set_status(text,style)
+        set_status(text, style)
         tab6.ElogView.insert(END, f"{now} - {text}")
         value = tab6.ElogView.get(0, END)
         pickle.dump(value, open("ErrorLog", "wb"))
 
-####################################################################################################################################################
-####################################################################################################################################################
-####################################################################################################################################################
-#####TAB 1
+
+##### TAB 1 #####
 
 
-###LABELS#################################################################
-##########################################################################
+##### LABELS #####
+
+# TODO: seems like cartjog is the other important frame. maybe make a frame organizer somehow?
 
 CartjogFrame = Frame(
-    tab1,
+    tabs['1'],
     width=1536,
     height=792,
 )
 CartjogFrame.place(x=330, y=0)
 
-curRowLab = Label(tab1, text="Current Row:")
+curRowLab = Label(tabs['1'], text="Current Row:")
 curRowLab.place(x=98, y=120)
 
 
-almStatusLab = Label(tab1, text="SYSTEM READY - NO ACTIVE ALARMS", style="OK.TLabel")
+almStatusLab = Label(tabs['1'], text="SYSTEM READY - NO ACTIVE ALARMS", style="OK.TLabel")
 almStatusLab.place(x=25, y=12)
 
-xbcStatusLab = Label(tab1, text="Xbox OFF")
+xbcStatusLab = Label(tabs['1'], text="Xbox OFF")
 xbcStatusLab.place(x=1270, y=80)
 
-runStatusLab = Label(tab1, text="PROGRAM STOPPED")
+runStatusLab = Label(tabs['1'], text="PROGRAM STOPPED")
 runStatusLab.place(x=20, y=150)
 
 
-ProgLab = Label(tab1, text="Program:")
+ProgLab = Label(tabs['1'], text="Program:")
 ProgLab.place(x=10, y=45)
 
-jogIncrementLab = Label(tab1, text="Increment Value:")
+jogIncrementLab = Label(tabs['1'], text="Increment Value:")
 # jogIncrementLab.place(x=370, y=45)
 
-speedLab = Label(tab1, text="Speed")
+speedLab = Label(tabs['1'], text="Speed")
 speedLab.place(x=300, y=83)
 
-ACCLab = Label(tab1, text="Acceleration               %")
+ACCLab = Label(tabs['1'], text="Acceleration               %")
 ACCLab.place(x=300, y=103)
 
-DECLab = Label(tab1, text="Deceleration               %")
+DECLab = Label(tabs['1'], text="Deceleration               %")
 DECLab.place(x=300, y=123)
 
-DECLab = Label(tab1, text="Ramp                           %")
+DECLab = Label(tabs['1'], text="Ramp                           %")
 DECLab.place(x=300, y=143)
 
-RoundLab = Label(tab1, text="Rounding               mm")
+RoundLab = Label(tabs['1'], text="Rounding               mm")
 RoundLab.place(x=525, y=82)
 
 
-XLab = Label(CartjogFrame, font=("Arial", 18), text=" X")
-XLab.place(x=660, y=162)
+font = ("Arial", 18)
+mk_cj_label = lambda text: Label(CartjogFrame, font=font, text=text)
+places = {
+    "X": dict(x=660, y=162),
+    "Y": dict(x=750, y=162),
+    "Z": dict(x=840, y=162),
+    "Rz": dict(x=930, y=162),
+    "Ry": dict(x=1020, y=162),
+    "Rx": dict(x=1110, y=162),
+    "Tx": dict(x=660, y=265),
+    "Ty": dict(x=750, y=265),
+    "Tz": dict(x=840, y=265),
+    "Trz": dict(x=930, y=265),
+    "Try": dict(x=1020, y=265),
+    "Trx": dict(x=1110, y=265),
+}
 
-YLab = Label(CartjogFrame, font=("Arial", 18), text=" Y")
-YLab.place(x=750, y=162)
-
-ZLab = Label(CartjogFrame, font=("Arial", 18), text=" Z")
-ZLab.place(x=840, y=162)
-
-yLab = Label(CartjogFrame, font=("Arial", 18), text="Rz")
-yLab.place(x=930, y=162)
-
-pLab = Label(CartjogFrame, font=("Arial", 18), text="Ry")
-pLab.place(x=1020, y=162)
-
-rLab = Label(CartjogFrame, font=("Arial", 18), text="Rx")
-rLab.place(x=1110, y=162)
-
-
-TXLab = Label(CartjogFrame, font=("Arial", 18), text="Tx")
-TXLab.place(x=660, y=265)
-
-TYLab = Label(CartjogFrame, font=("Arial", 18), text="Ty")
-TYLab.place(x=750, y=265)
-
-TZLab = Label(CartjogFrame, font=("Arial", 18), text="Tz")
-TZLab.place(x=840, y=265)
-
-TyLab = Label(CartjogFrame, font=("Arial", 18), text="Trz")
-TyLab.place(x=930, y=265)
-
-TpLab = Label(CartjogFrame, font=("Arial", 18), text="Try")
-TpLab.place(x=1020, y=265)
-
-J7Lab = Label(CartjogFrame, font=("Arial", 18), text="Trx")
-J7Lab.place(x=1110, y=265)
+# cart jog labels
+cj_labels = {x: mk_cj_label(x) for x in places.keys()}
+for k,v in cj_labels.items():
+    v.place(**places[k])
 
 
 ### JOINT CONTROL ################################################################
-##########################################################################
-##J1
-J1jogFrame = Frame(
-    tab1,
-    width=340,
-    height=40,
-)
-J1jogFrame.place(x=810, y=10)
-J1Lab = Label(J1jogFrame, font=("Arial", 18), text="J1")
-J1Lab.place(x=5, y=5)
-J1curAngEntryField = Entry(J1jogFrame, width=5)
-J1curAngEntryField.place(x=35, y=9)
-
-
-def SelJ1jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J1jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(10)
-
-
-J1jogNegBut = Button(J1jogFrame, text="-", width=3)
-J1jogNegBut.bind("<ButtonPress>", SelJ1jogNeg)
-J1jogNegBut.bind("<ButtonRelease>", StopJog)
-J1jogNegBut.place(x=77, y=7, width=30, height=25)
-
-
-def SelJ1jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J1jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(11)
-
-
-J1jogPosBut = Button(J1jogFrame, text="+", width=3)
-J1jogPosBut.bind("<ButtonPress>", SelJ1jogPos)
-J1jogPosBut.bind("<ButtonRelease>", StopJog)
-J1jogPosBut.place(x=300, y=7, width=30, height=25)
-J1negLimLab = Label(J1jogFrame, font=("Arial", 8), text=str(-J1axisLimNeg), style="Jointlim.TLabel")
-J1negLimLab.place(x=115, y=25)
-J1posLimLab = Label(J1jogFrame, font=("Arial", 8), text=str(J1axisLimPos), style="Jointlim.TLabel")
-J1posLimLab.place(x=270, y=25)
-J1slidelabel = Label(J1jogFrame)
-J1slidelabel.place(x=190, y=25)
-
-
-def J1sliderUpdate(foo):
-    J1slidelabel.config(text=round(float(J1jogslide.get()), 2))
-
-
-def J1sliderExecute(foo):
-    J1delta = float(J1jogslide.get()) - float(J1curAngEntryField.get())
-    if J1delta < 0:
-        J1jogNeg(abs(J1delta))
-    else:
-        J1jogPos(abs(J1delta))
-
-
-J1jogslide = Scale(
-    J1jogFrame,
-    from_=-J1axisLimNeg,
-    to=J1axisLimPos,
-    length=180,
-    orient=HORIZONTAL,
-    command=J1sliderUpdate,
-)
-J1jogslide.bind("<ButtonRelease-1>", J1sliderExecute)
-J1jogslide.place(x=115, y=7)
-
-##J2
-J2jogFrame = Frame(
-    tab1,
-    width=340,
-    height=40,
-)
-J2jogFrame.place(x=810, y=55)
-J2Lab = Label(J2jogFrame, font=("Arial", 18), text="J2")
-J2Lab.place(x=5, y=5)
-J2curAngEntryField = Entry(J2jogFrame, width=5)
-J2curAngEntryField.place(x=35, y=9)
-
-
-def SelJ2jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J2jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(20)
-
-
-J2jogNegBut = Button(J2jogFrame, text="-", width=3)
-J2jogNegBut.bind("<ButtonPress>", SelJ2jogNeg)
-J2jogNegBut.bind("<ButtonRelease>", StopJog)
-J2jogNegBut.place(x=77, y=7, width=30, height=25)
-
-
-def SelJ2jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J2jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(21)
-
-
-J2jogPosBut = Button(J2jogFrame, text="+", width=3)
-J2jogPosBut.bind("<ButtonPress>", SelJ2jogPos)
-J2jogPosBut.bind("<ButtonRelease>", StopJog)
-J2jogPosBut.place(x=300, y=7, width=30, height=25)
-J2negLimLab = Label(J2jogFrame, font=("Arial", 8), text=str(-J2axisLimNeg), style="Jointlim.TLabel")
-J2negLimLab.place(x=115, y=25)
-J2posLimLab = Label(J2jogFrame, font=("Arial", 8), text=str(J2axisLimPos), style="Jointlim.TLabel")
-J2posLimLab.place(x=270, y=25)
-J2slidelabel = Label(J2jogFrame)
-J2slidelabel.place(x=190, y=25)
-
-
-def J2sliderUpdate(foo):
-    J2slidelabel.config(text=round(float(J2jogslide.get()), 2))
-
-
-def J2sliderExecute(foo):
-    J2delta = float(J2jogslide.get()) - float(J2curAngEntryField.get())
-    if J2delta < 0:
-        J2jogNeg(abs(J2delta))
-    else:
-        J2jogPos(abs(J2delta))
-
-
-J2jogslide = Scale(
-    J2jogFrame,
-    from_=-J2axisLimNeg,
-    to=J2axisLimPos,
-    length=180,
-    orient=HORIZONTAL,
-    command=J2sliderUpdate,
-)
-J2jogslide.bind("<ButtonRelease-1>", J2sliderExecute)
-J2jogslide.place(x=115, y=7)
-
-##J3
-J3jogFrame = Frame(
-    tab1,
-    width=340,
-    height=40,
-)
-J3jogFrame.place(x=810, y=100)
-J3Lab = Label(J3jogFrame, font=("Arial", 18), text="J3")
-J3Lab.place(x=5, y=5)
-J3curAngEntryField = Entry(J3jogFrame, width=5)
-J3curAngEntryField.place(x=35, y=9)
-
-
-def SelJ3jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J3jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(30)
-
-
-J3jogNegBut = Button(J3jogFrame, text="-", width=3)
-J3jogNegBut.bind("<ButtonPress>", SelJ3jogNeg)
-J3jogNegBut.bind("<ButtonRelease>", StopJog)
-J3jogNegBut.place(x=77, y=7, width=30, height=25)
-
-
-def SelJ3jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J3jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(31)
-
-
-J3jogPosBut = Button(J3jogFrame, text="+", width=3)
-J3jogPosBut.bind("<ButtonPress>", SelJ3jogPos)
-J3jogPosBut.bind("<ButtonRelease>", StopJog)
-J3jogPosBut.place(x=300, y=7, width=30, height=25)
-J3negLimLab = Label(J3jogFrame, font=("Arial", 8), text=str(-J3axisLimNeg), style="Jointlim.TLabel")
-J3negLimLab.place(x=115, y=25)
-J3posLimLab = Label(J3jogFrame, font=("Arial", 8), text=str(J3axisLimPos), style="Jointlim.TLabel")
-J3posLimLab.place(x=270, y=25)
-J3slidelabel = Label(J3jogFrame)
-J3slidelabel.place(x=190, y=25)
-
-
-def J3sliderUpdate(foo):
-    J3slidelabel.config(text=round(float(J3jogslide.get()), 2))
-
-
-def J3sliderExecute(foo):
-    J3delta = float(J3jogslide.get()) - float(J3curAngEntryField.get())
-    if J3delta < 0:
-        J3jogNeg(abs(J3delta))
-    else:
-        J3jogPos(abs(J3delta))
-
-
-J3jogslide = Scale(
-    J3jogFrame,
-    from_=-J3axisLimNeg,
-    to=J3axisLimPos,
-    length=180,
-    orient=HORIZONTAL,
-    command=J3sliderUpdate,
-)
-J3jogslide.bind("<ButtonRelease-1>", J3sliderExecute)
-J3jogslide.place(x=115, y=7)
-
-##J4
-J4jogFrame = Frame(
-    tab1,
-    width=340,
-    height=40,
-)
-J4jogFrame.place(x=1160, y=10)
-J4Lab = Label(J4jogFrame, font=("Arial", 18), text="J4")
-J4Lab.place(x=5, y=5)
-J4curAngEntryField = Entry(J4jogFrame, width=5)
-J4curAngEntryField.place(x=35, y=9)
-
-
-def SelJ4jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J4jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(40)
-
-
-J4jogNegBut = Button(J4jogFrame, text="-", width=3)
-J4jogNegBut.bind("<ButtonPress>", SelJ4jogNeg)
-J4jogNegBut.bind("<ButtonRelease>", StopJog)
-J4jogNegBut.place(x=77, y=7, width=30, height=25)
-
-
-def SelJ4jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J4jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(41)
-
-
-J4jogPosBut = Button(J4jogFrame, text="+", width=3)
-J4jogPosBut.bind("<ButtonPress>", SelJ4jogPos)
-J4jogPosBut.bind("<ButtonRelease>", StopJog)
-J4jogPosBut.place(x=300, y=7, width=30, height=25)
-J4negLimLab = Label(J4jogFrame, font=("Arial", 8), text=str(-J4axisLimNeg), style="Jointlim.TLabel")
-J4negLimLab.place(x=115, y=25)
-J4posLimLab = Label(J4jogFrame, font=("Arial", 8), text=str(J4axisLimPos), style="Jointlim.TLabel")
-J4posLimLab.place(x=270, y=25)
-J4slidelabel = Label(J4jogFrame)
-J4slidelabel.place(x=190, y=25)
-
-
-def J4sliderUpdate(foo):
-    J4slidelabel.config(text=round(float(J4jogslide.get()), 2))
-
-
-def J4sliderExecute(foo):
-    J4delta = float(J4jogslide.get()) - float(J4curAngEntryField.get())
-    if J4delta < 0:
-        J4jogNeg(abs(J4delta))
-    else:
-        J4jogPos(abs(J4delta))
-
-
-J4jogslide = Scale(
-    J4jogFrame,
-    from_=-J4axisLimNeg,
-    to=J4axisLimPos,
-    length=180,
-    orient=HORIZONTAL,
-    command=J4sliderUpdate,
-)
-J4jogslide.bind("<ButtonRelease-1>", J4sliderExecute)
-J4jogslide.place(x=115, y=7)
-
-##J5
-J5jogFrame = Frame(
-    tab1,
-    width=340,
-    height=40,
-)
-J5jogFrame.place(x=1160, y=55)
-J5Lab = Label(J5jogFrame, font=("Arial", 18), text="J5")
-J5Lab.place(x=5, y=5)
-J5curAngEntryField = Entry(J5jogFrame, width=5)
-J5curAngEntryField.place(x=35, y=9)
-
-
-def SelJ5jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J5jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(50)
-
-
-J5jogNegBut = Button(J5jogFrame, text="-", width=3)
-J5jogNegBut.bind("<ButtonPress>", SelJ5jogNeg)
-J5jogNegBut.bind("<ButtonRelease>", StopJog)
-J5jogNegBut.place(x=77, y=7, width=30, height=25)
-
-
-def SelJ5jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J5jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(51)
-
-
-J5jogPosBut = Button(J5jogFrame, text="+", width=3)
-J5jogPosBut.bind("<ButtonPress>", SelJ5jogPos)
-J5jogPosBut.bind("<ButtonRelease>", StopJog)
-J5jogPosBut.place(x=300, y=7, width=30, height=25)
-J5negLimLab = Label(J5jogFrame, font=("Arial", 8), text=str(-J5axisLimNeg), style="Jointlim.TLabel")
-J5negLimLab.place(x=115, y=25)
-J5posLimLab = Label(J5jogFrame, font=("Arial", 8), text=str(J5axisLimPos), style="Jointlim.TLabel")
-J5posLimLab.place(x=270, y=25)
-J5slidelabel = Label(J5jogFrame)
-J5slidelabel.place(x=190, y=25)
-
-
-def J5sliderUpdate(foo):
-    J5slidelabel.config(text=round(float(J5jogslide.get()), 2))
-
-
-def J5sliderExecute(foo):
-    J5delta = float(J5jogslide.get()) - float(J5curAngEntryField.get())
-    if J5delta < 0:
-        J5jogNeg(abs(J5delta))
-    else:
-        J5jogPos(abs(J5delta))
-
-
-J5jogslide = Scale(
-    J5jogFrame,
-    from_=-J5axisLimNeg,
-    to=J5axisLimPos,
-    length=180,
-    orient=HORIZONTAL,
-    command=J5sliderUpdate,
-)
-J5jogslide.bind("<ButtonRelease-1>", J5sliderExecute)
-J5jogslide.place(x=115, y=7)
-
-##J6
-J6jogFrame = Frame(
-    tab1,
-    width=340,
-    height=40,
-)
-J6jogFrame.place(x=1160, y=100)
-J6Lab = Label(J6jogFrame, font=("Arial", 18), text="J6")
-J6Lab.place(x=5, y=5)
-J6curAngEntryField = Entry(J6jogFrame, width=5)
-J6curAngEntryField.place(x=35, y=9)
-
-
-def SelJ6jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J6jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(60)
-
-
-J6jogNegBut = Button(J6jogFrame, text="-", width=3)
-J6jogNegBut.bind("<ButtonPress>", SelJ6jogNeg)
-J6jogNegBut.bind("<ButtonRelease>", StopJog)
-J6jogNegBut.place(x=77, y=7, width=30, height=25)
-
-
-def SelJ6jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J6jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(61)
-
-
-J6jogPosBut = Button(J6jogFrame, text="+", width=3)
-J6jogPosBut.bind("<ButtonPress>", SelJ6jogPos)
-J6jogPosBut.bind("<ButtonRelease>", StopJog)
-J6jogPosBut.place(x=300, y=7, width=30, height=25)
-J6negLimLab = Label(J6jogFrame, font=("Arial", 8), text=str(-J6axisLimNeg), style="Jointlim.TLabel")
-J6negLimLab.place(x=115, y=25)
-J6posLimLab = Label(J6jogFrame, font=("Arial", 8), text=str(J6axisLimPos), style="Jointlim.TLabel")
-J6posLimLab.place(x=270, y=25)
-J6slidelabel = Label(J6jogFrame)
-J6slidelabel.place(x=190, y=25)
-
-
-def J6sliderUpdate(foo):
-    J6slidelabel.config(text=round(float(J6jogslide.get()), 2))
-
-
-def J6sliderExecute(foo):
-    J6delta = float(J6jogslide.get()) - float(J6curAngEntryField.get())
-    if J6delta < 0:
-        J6jogNeg(abs(J6delta))
-    else:
-        J6jogPos(abs(J6delta))
-
-
-J6jogslide = Scale(
-    J6jogFrame,
-    from_=-J6axisLimNeg,
-    to=J6axisLimPos,
-    length=180,
-    orient=HORIZONTAL,
-    command=J6sliderUpdate,
-)
-J6jogslide.bind("<ButtonRelease-1>", J6sliderExecute)
-J6jogslide.place(x=115, y=7)
-
-
-J7jogFrame = Frame(tab1, width=145, height=100)
-J7jogFrame["relief"] = "raised"
-J7jogFrame.place(x=1340, y=350)
-J7Lab = Label(J7jogFrame, font=("Arial", 14), text="7th Axis")
-J7Lab.place(x=15, y=5)
-J7curAngEntryField = Entry(J7jogFrame, width=5)
-J7curAngEntryField.place(x=95, y=9)
-
-
-def SelJ7jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J7jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(70)
-
-
-J7jogNegBut = Button(J7jogFrame, text="-", width=3)
-J7jogNegBut.bind("<ButtonPress>", SelJ7jogNeg)
-J7jogNegBut.bind("<ButtonRelease>", StopJog)
-J7jogNegBut.place(x=10, y=65, width=30, height=25)
-
-
-def SelJ7jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J7jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(71)
-
-
-J7jogPosBut = Button(J7jogFrame, text="+", width=3)
-J7jogPosBut.bind("<ButtonPress>", SelJ7jogPos)
-J7jogPosBut.bind("<ButtonRelease>", StopJog)
-J7jogPosBut.place(x=105, y=65, width=30, height=25)
-J7negLimLab = Label(J7jogFrame, font=("Arial", 8), text=str(-J7axisLimNeg), style="Jointlim.TLabel")
-J7negLimLab.place(x=10, y=30)
-J7posLimLab = Label(J7jogFrame, font=("Arial", 8), text=str(J7axisLimPos), style="Jointlim.TLabel")
-J7posLimLab.place(x=110, y=30)
-J7slideLimLab = Label(J7jogFrame)
-J7slideLimLab.place(x=60, y=70)
-
-
-def J7sliderUpdate(foo):
-    J7slideLimLab.config(text=round(float(J7jogslide.get()), 2))
-
-
-def J7sliderExecute(foo):
-    J7delta = float(J7jogslide.get()) - float(J7curAngEntryField.get())
-    if J7delta < 0:
-        J7jogNeg(abs(J7delta))
-    else:
-        J7jogPos(abs(J7delta))
-
-
-J7jogslide = Scale(
-    J7jogFrame,
-    from_=-J7axisLimNeg,
-    to=J7axisLimPos,
-    length=125,
-    orient=HORIZONTAL,
-    command=J7sliderUpdate,
-)
-J7jogslide.bind("<ButtonRelease-1>", J7sliderExecute)
-J7jogslide.place(x=10, y=43)
-
-
-J8jogFrame = Frame(tab1, width=145, height=100)
-J8jogFrame["relief"] = "raised"
-J8jogFrame.place(x=1340, y=460)
-J8Lab = Label(J8jogFrame, font=("Arial", 14), text="8th Axis")
-J8Lab.place(x=15, y=5)
-J8curAngEntryField = Entry(J8jogFrame, width=5)
-J8curAngEntryField.place(x=95, y=9)
-
-
-def SelJ8jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J8jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(80)
-
-
-J8jogNegBut = Button(J8jogFrame, text="-", width=3)
-J8jogNegBut.bind("<ButtonPress>", SelJ8jogNeg)
-J8jogNegBut.bind("<ButtonRelease>", StopJog)
-J8jogNegBut.place(x=10, y=65, width=30, height=25)
-
-
-def SelJ8jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J8jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(81)
-
-
-J8jogPosBut = Button(J8jogFrame, text="+", width=3)
-J8jogPosBut.bind("<ButtonPress>", SelJ8jogPos)
-J8jogPosBut.bind("<ButtonRelease>", StopJog)
-J8jogPosBut.place(x=105, y=65, width=30, height=25)
-J8negLimLab = Label(J8jogFrame, font=("Arial", 8), text=str(-J8axisLimNeg), style="Jointlim.TLabel")
-J8negLimLab.place(x=10, y=30)
-J8posLimLab = Label(J8jogFrame, font=("Arial", 8), text=str(J8axisLimPos), style="Jointlim.TLabel")
-J8posLimLab.place(x=110, y=30)
-J8slideLimLab = Label(J8jogFrame)
-J8slideLimLab.place(x=60, y=70)
-
-
-def J8sliderUpdate(foo):
-    J8slideLimLab.config(text=round(float(J8jogslide.get()), 2))
-
-
-def J8sliderExecute(foo):
-    J8delta = float(J8jogslide.get()) - float(J8curAngEntryField.get())
-    if J8delta < 0:
-        J8jogNeg(abs(J8delta))
-    else:
-        J8jogPos(abs(J8delta))
-
-
-J8jogslide = Scale(
-    J8jogFrame,
-    from_=-J8axisLimNeg,
-    to=J8axisLimPos,
-    length=125,
-    orient=HORIZONTAL,
-    command=J8sliderUpdate,
-)
-J8jogslide.bind("<ButtonRelease-1>", J8sliderExecute)
-J8jogslide.place(x=10, y=43)
-
-
-J9jogFrame = Frame(tab1, width=145, height=100)
-J9jogFrame["relief"] = "raised"
-J9jogFrame.place(x=1340, y=570)
-J9Lab = Label(J9jogFrame, font=("Arial", 14), text="9th Axis")
-J9Lab.place(x=15, y=5)
-J9curAngEntryField = Entry(J9jogFrame, width=5)
-J9curAngEntryField.place(x=95, y=9)
-
-
-def SelJ9jogNeg(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J9jogNeg(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(90)
-
-
-J9jogNegBut = Button(J9jogFrame, text="-", width=3)
-J9jogNegBut.bind("<ButtonPress>", SelJ9jogNeg)
-J9jogNegBut.bind("<ButtonRelease>", StopJog)
-J9jogNegBut.place(x=10, y=65, width=30, height=25)
-
-
-def SelJ9jogPos(self):
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 1:
-        J9jogPos(float(incrementEntryField.get()))
-    else:
-        LiveJointJog(91)
-
-
-J9jogPosBut = Button(J9jogFrame, text="+", width=3)
-J9jogPosBut.bind("<ButtonPress>", SelJ9jogPos)
-J9jogPosBut.bind("<ButtonRelease>", StopJog)
-J9jogPosBut.place(x=105, y=65, width=30, height=25)
-J9negLimLab = Label(J9jogFrame, font=("Arial", 8), text=str(-J9axisLimNeg), style="Jointlim.TLabel")
-J9negLimLab.place(x=10, y=30)
-J9posLimLab = Label(J9jogFrame, font=("Arial", 8), text=str(J9axisLimPos), style="Jointlim.TLabel")
-J9posLimLab.place(x=110, y=30)
-J9slideLimLab = Label(J9jogFrame)
-J9slideLimLab.place(x=60, y=70)
-
-
-def J9sliderUpdate(foo):
-    J9slideLimLab.config(text=round(float(J9jogslide.get()), 2))
-
-
-def J9sliderExecute(foo):
-    J9delta = float(J9jogslide.get()) - float(J9curAngEntryField.get())
-    if J9delta < 0:
-        J9jogNeg(abs(J9delta))
-    else:
-        J9jogPos(abs(J9delta))
-
-
-J9jogslide = Scale(
-    J9jogFrame,
-    from_=-J9axisLimNeg,
-    to=J9axisLimPos,
-    length=125,
-    orient=HORIZONTAL,
-    command=J9sliderUpdate,
-)
-J9jogslide.bind("<ButtonRelease-1>", J9sliderExecute)
-J9jogslide.place(x=10, y=43)
 
+class JointCTR:
+    """A robotic joint controller"""
+
+    active = []
+
+    # pos, neg
+    limits = [
+        [170, 170],
+        [90, 42],
+        [52, 89],
+        [165, 165],
+        [105, 105],
+        [155, 155],
+        [340, 0],
+        [340, 0],
+        [340, 0],
+    ]
+
+    def __init__(self):
+
+        JointCTR.active.append(self)
+
+        self.idx = len(JointCTR.active)
+        self.name = "J{self.idx}"
+
+        # int
+        self.open_loop_stat = None
+        self.cal_stat = [None, None]
+
+        self.limits = JointCTR.limits[self.idx]
+        self.range = sum(self.limits)
+        self.limits = {'pos':self.limits[0], 'neg':self.limits[1]}
+
+
+# TODO: remove since it was for testing
+# joints = [Joint() for _ in range(6)]
+
+
+class JointFrame:
+    """a GUI frame for a joint"""
+
+    active = []
+
+    def __init__(self, x,y):
+
+        self.ctr = JointCTR()
+
+        self.frame = Frame(tabs['1'], width=340, height=40)
+        self.frame.place(x=x, y=y)
+
+        self.entry = Entry(self.frame, width=5)
+        self.entry.place(x=35, y=9)
+
+        self.locations = [
+                (5,5),
+                (115,25),
+                (270,25),
+                (190,25),
+        ]
+        self.mk_labels()
+        self.mk_buttons()
+        self.mk_slider(115,7,180)
+        JointFrame.active.append(self)
+
+    def mk_buttons(self):
+        """makes jogging buttons"""
+
+        button = lambda text: Button(self.frame, text=text, width=3)
+        self.buttons = {
+            "neg": button("-"),
+            "pos": button("+"),
+        }
+        for x, (k, button) in zip([77, 300], self.buttons.items()):
+            pass  # TODO: selJ1jogneg is a function
+            button.bind("<ButtonRelease>", self.stop_jog)
+            button.place(x=x, y=7, width=30, height=25)
+
+        self.buttons['neg'].bind("<ButtonPress>", self.SeljogNeg)
+        self.buttons['pos'].bind("<ButtonPress>", self.SeljogPos)
+
+
+    def mk_labels(self):
+        """docstring"""
+
+        self.labels = {
+            'main':Label(self.frame, font=("Arial", 18), text=self.ctr.name),
+            "neg_lim": Label(
+                self.frame, font=("Arial", 8), text=str(-self.ctr.limits['neg']), style="Jointlim.TLabel"
+            ),
+            "pos_lim": Label(
+                self.frame, font=("Arial", 8), text=str(self.ctr.limits['pos']), style="Jointlim.TLabel"
+            ),
+            "slide": Label(self.frame),
+        }
+
+        for i, (k, label) in enumerate(self.labels.items()):
+            loc = {a:b for a,b in zip(['x','y'],self.locations[i])}
+            label.place(**loc)
+
+
+
+    def mk_slider(self,x,y,length):
+        """makes slider"""
+
+        self.slider = Scale(
+            self.frame,
+            from_=-self.ctr.limits['neg'],
+            to=self.ctr.limits['pos'],
+            length=length,
+            orient=HORIZONTAL,
+            command=self.sliderUpdate,
+        )
+        self.slider.bind("<ButtonRelease-1>", self.sliderExecute)
+        self.slider.place(x=x, y=y)
+
+    def stop_jog(self):
+        """docstring"""
+        pass
+
+    def jog(self):
+        """replacement for sel jog"""
+        # TODO
+        pass
+
+    def SeljogNeg(self):
+        """docstring"""
+        """
+            J1 10,11 pos,neg
+            J2 20,21 pos,neg
+            J3 30,31 pos,neg
+        """
+        live = self.idx * 10
+        IncJogStatVal = int(IncJogStat.get())
+        if IncJogStatVal == 1:
+            J1jogNeg(float(incrementEntryField.get()))
+        else:
+            LiveJointJog(live)
+
+    def SeljogPos(self):
+        """docstring"""
+        live = self.idx * 10 + 1
+        IncJogStatVal = int(IncJogStat.get())
+        if IncJogStatVal == 1:
+            J1jogPos(float(incrementEntryField.get()))
+        else:
+            LiveJointJog(live)
+
+    def sliderUpdate(self):
+        """docstring"""
+        text = round(float(self.labels["slide"].get()), 2)
+        self.labels["slide"].config(text=text)
+
+    def sliderExecute(foo):
+        """docstring"""
+        self.delta = float(self.labels["slide"].get()) - float(self.entry.get())
+        # TODO: fix to be just "jog"
+        func = jogNeg if self.delta < 0 else jogPos
+        func(abs(self.delta))
+
+
+class ExtJointFrame(JointFrame):
+    """JointFrame for external axis"""
+
+    def __init__(self, x,y):
+        # super(ExtJointFrame,self).__init__(x,y)
+
+        self.ctr = JointCTR()
+
+        # TODO: finish
+        self.frame = Frame(tabs['1'], width=145, height=100)
+        self.frame["relief"] = "raised"
+        self.frame.place(x=x, y=y)
+
+        self.locations = [
+                (15,5),
+                (10,30),
+                (110,30),
+                (60,70),
+        ]
+        self.mk_labels()
+        self.labels['main'].config(text=f'{self.ctr.name} Axis')
+
+        self.entry = Entry(self.frame, width=5)
+        self.entry.place(x=95, y=9)
+
+        self.mk_buttons()
+        self.mk_slider(x=10,y=43,length=125)
+
+        # TODO: what about cls.active ??
+
+    def mk_buttons(self):
+        """makes buttons"""
+        super().mk_buttons()
+
+        xy = [dict(x=10, y=65), dict(x=105, y=65)] # relative button coordinates
+        for i,(k,button) in enumerate(self.buttons.items()):
+            button.place(**xy[i])
+        
+
+
+joint_frames = [
+    JointFrame(x=810, y=10),
+    JointFrame(x=810, y=55),
+    JointFrame(x=810, y=100),
+    JointFrame(x=1160, y=10),
+    JointFrame(x=1160, y=55),
+    #
+    ExtJointFrame(x=1340, y=350),
+    ExtJointFrame(x=1340, y=460),
+    ExtJointFrame(x=1340, y=570),
+]
 
 ####ENTRY FIELDS##########################################################
 ##########################################################################
 
-incrementEntryField = Entry(tab1, width=4)
+#TODO: how to clean this up?
+
+incrementEntryField = Entry(tabs['1'], width=4)
 incrementEntryField.place(x=380, y=45)
 
-curRowEntryField = Entry(tab1, width=4)
+curRowEntryField = Entry(tabs['1'], width=4)
 curRowEntryField.place(x=174, y=120)
 
-manEntryField = Entry(tab1, width=105)
+manEntryField = Entry(tabs['1'], width=105)
 manEntryField.place(x=10, y=700)
 
-ProgEntryField = Entry(tab1, width=20)
+ProgEntryField = Entry(tabs['1'], width=20)
 ProgEntryField.place(x=70, y=45)
 
 
-speedEntryField = Entry(tab1, width=4)
+speedEntryField = Entry(tabs['1'], width=4)
 speedEntryField.place(x=380, y=80)
 
-ACCspeedField = Entry(tab1, width=4)
+ACCspeedField = Entry(tabs['1'], width=4)
 ACCspeedField.place(x=380, y=100)
 
-DECspeedField = Entry(tab1, width=4)
+DECspeedField = Entry(tabs['1'], width=4)
 DECspeedField.place(x=380, y=120)
 
-ACCrampField = Entry(tab1, width=4)
+ACCrampField = Entry(tabs['1'], width=4)
 ACCrampField.place(x=380, y=140)
 
-roundEntryField = Entry(tab1, width=4)
+roundEntryField = Entry(tabs['1'], width=4)
 roundEntryField.place(x=590, y=80)
 
 
-### X ###
+class CTJogger():
+    """Cartesian Jogger GUI Object"""
+    "ie: XcurEntryField"
+    # NOTE: is cur for current as in time or electricity?
 
-XcurEntryField = Entry(CartjogFrame, width=5)
-XcurEntryField.place(x=660, y=195)
+    active = []
 
+    def __init__(self, x,y, label):
 
-### Y ###
-
-YcurEntryField = Entry(CartjogFrame, width=5)
-YcurEntryField.place(x=750, y=195)
-
-
-### Z ###
-
-ZcurEntryField = Entry(CartjogFrame, width=5)
-ZcurEntryField.place(x=840, y=195)
+        self.entry = Entry(CartjogFrame, width=5)
+        self.entry.place(x=x, y=y)
 
 
-### Rz ###
+CTJogger(660,195, 'X')
+CTJogger(750, 195, 'Y')
+CTJogger(840, 195, 'Z')
 
-RzcurEntryField = Entry(CartjogFrame, width=5)
-RzcurEntryField.place(x=930, y=195)
-
-
-### Ry ###
-
-RycurEntryField = Entry(CartjogFrame, width=5)
-RycurEntryField.place(x=1020, y=195)
-
-
-### Rx ###
-
-RxcurEntryField = Entry(CartjogFrame, width=5)
-RxcurEntryField.place(x=1110, y=195)
+CTJogger(930, 195, 'Rz')
+CTJogger(1020, 195, 'Ry')
+CTJogger(1110, 195, 'Rx')
 
 
 ###BUTTONS################################################################
@@ -944,25 +510,25 @@ def posRegFieldVisible(self):
         SavePosEntryField.place_forget()
 
 
-manInsBut = Button(tab1, text="  Insert  ", command=manInsItem)
+manInsBut = Button(tabs['1'], text="  Insert  ", command=manInsItem)
 manInsBut.place(x=98, y=725)
 
-manRepBut = Button(tab1, text="Replace", command=manReplItem)
+manRepBut = Button(tabs['1'], text="Replace", command=manReplItem)
 manRepBut.place(x=164, y=725)
 
-getSelBut = Button(tab1, text="Get Selected", command=getSel)
+getSelBut = Button(tabs['1'], text="Get Selected", command=getSel)
 getSelBut.place(x=10, y=725)
 
-speedOption = StringVar(tab1)
-speedMenu = OptionMenu(tab1, speedOption, "Percent", "Percent", "Seconds", "mm per Sec")
+speedOption = StringVar(tabs['1'])
+speedMenu = OptionMenu(tabs['1'], speedOption, "Percent", "Percent", "Seconds", "mm per Sec")
 speedMenu.place(x=412, y=76)
 
 
 # single buttons
 
-options = StringVar(tab1)
+options = StringVar(tabs['1'])
 menu = OptionMenu(
-    tab1,
+    tabs['1'],
     options,
     "Move J",
     "Move J",
@@ -986,209 +552,209 @@ menu.grid(row=2, column=2)
 menu.config(width=18)
 menu.place(x=700, y=180)
 
-SavePosEntryField = Entry(tab1, width=5)
+SavePosEntryField = Entry(tabs['1'], width=5)
 # SavePosEntryField.place(x=800, y=183)
 
 
-teachInsBut = Button(tab1, text="Teach New Position", width=22, command=teachInsertBelSelected)
+teachInsBut = Button(tabs['1'], text="Teach New Position", width=22, command=teachInsertBelSelected)
 teachInsBut.place(x=700, y=220)
 
-teachReplaceBut = Button(tab1, text="Modify Position", width=22, command=teachReplaceSelected)
+teachReplaceBut = Button(tabs['1'], text="Modify Position", width=22, command=teachReplaceSelected)
 teachReplaceBut.place(x=700, y=260)
 
-deleteBut = Button(tab1, text="Delete", width=22, command=deleteitem)
+deleteBut = Button(tabs['1'], text="Delete", width=22, command=deleteitem)
 deleteBut.place(x=700, y=300)
 
-CalibrateBut = Button(tab1, text="Auto Calibrate CMD", width=22, command=insCalibrate)
+CalibrateBut = Button(tabs['1'], text="Auto Calibrate CMD", width=22, command=insCalibrate)
 CalibrateBut.place(x=700, y=340)
 
-camOnBut = Button(tab1, text="Camera On", width=22, command=cameraOn)
+camOnBut = Button(tabs['1'], text="Camera On", width=22, command=cameraOn)
 camOnBut.place(x=700, y=380)
 
-camOffBut = Button(tab1, text="Camera Off", width=22, command=cameraOff)
+camOffBut = Button(tabs['1'], text="Camera Off", width=22, command=cameraOff)
 camOffBut.place(x=700, y=420)
 
 
 # buttons with 1 entry
 
-waitTimeBut = Button(tab1, text="Wait Time (seconds)", width=22, command=waitTime)
+waitTimeBut = Button(tabs['1'], text="Wait Time (seconds)", width=22, command=waitTime)
 waitTimeBut.place(x=700, y=460)
 
-waitInputOnBut = Button(tab1, text="Wait Input ON", width=22, command=waitInputOn)
+waitInputOnBut = Button(tabs['1'], text="Wait Input ON", width=22, command=waitInputOn)
 waitInputOnBut.place(x=700, y=500)
 
-waitInputOffBut = Button(tab1, text="Wait Input OFF", width=22, command=waitInputOff)
+waitInputOffBut = Button(tabs['1'], text="Wait Input OFF", width=22, command=waitInputOff)
 waitInputOffBut.place(x=700, y=540)
 
-setOutputOnBut = Button(tab1, text="Set Output On", width=22, command=setOutputOn)
+setOutputOnBut = Button(tabs['1'], text="Set Output On", width=22, command=setOutputOn)
 setOutputOnBut.place(x=700, y=580)
 
-setOutputOffBut = Button(tab1, text="Set Output OFF", width=22, command=setOutputOff)
+setOutputOffBut = Button(tabs['1'], text="Set Output OFF", width=22, command=setOutputOff)
 setOutputOffBut.place(x=700, y=620)
 
-tabNumBut = Button(tab1, text="Create Tab", width=22, command=tabNumber)
+tabNumBut = Button(tabs['1'], text="Create Tab", width=22, command=tabNumber)
 tabNumBut.place(x=700, y=660)
 
-jumpTabBut = Button(tab1, text="Jump to Tab", width=22, command=jumpTab)
+jumpTabBut = Button(tabs['1'], text="Jump to Tab", width=22, command=jumpTab)
 jumpTabBut.place(x=700, y=700)
 
 
-waitTimeEntryField = Entry(tab1, width=5)
+waitTimeEntryField = Entry(tabs['1'], width=5)
 waitTimeEntryField.place(x=855, y=465)
 
-waitInputEntryField = Entry(tab1, width=5)
+waitInputEntryField = Entry(tabs['1'], width=5)
 waitInputEntryField.place(x=855, y=505)
 
-waitInputOffEntryField = Entry(tab1, width=5)
+waitInputOffEntryField = Entry(tabs['1'], width=5)
 waitInputOffEntryField.place(x=855, y=545)
 
-outputOnEntryField = Entry(tab1, width=5)
+outputOnEntryField = Entry(tabs['1'], width=5)
 outputOnEntryField.place(x=855, y=585)
 
-outputOffEntryField = Entry(tab1, width=5)
+outputOffEntryField = Entry(tabs['1'], width=5)
 outputOffEntryField.place(x=855, y=625)
 
-tabNumEntryField = Entry(tab1, width=5)
+tabNumEntryField = Entry(tabs['1'], width=5)
 tabNumEntryField.place(x=855, y=665)
 
-jumpTabEntryField = Entry(tab1, width=5)
+jumpTabEntryField = Entry(tabs['1'], width=5)
 jumpTabEntryField.place(x=855, y=705)
 
 
 # buttons with multiple entry
 
-IfOnjumpTabBut = Button(tab1, text="If On Jump", width=22, command=IfOnjumpTab)
+IfOnjumpTabBut = Button(tabs['1'], text="If On Jump", width=22, command=IfOnjumpTab)
 IfOnjumpTabBut.place(x=950, y=360)
 
-IfOffjumpTabBut = Button(tab1, text="If Off Jump", width=22, command=IfOffjumpTab)
+IfOffjumpTabBut = Button(tabs['1'], text="If Off Jump", width=22, command=IfOffjumpTab)
 IfOffjumpTabBut.place(x=950, y=400)
 
-servoBut = Button(tab1, text="Servo", width=22, command=Servo)
+servoBut = Button(tabs['1'], text="Servo", width=22, command=Servo)
 servoBut.place(x=950, y=440)
 
-RegNumBut = Button(tab1, text="Register", width=22, command=insertRegister)
+RegNumBut = Button(tabs['1'], text="Register", width=22, command=insertRegister)
 RegNumBut.place(x=950, y=480)
 
-RegJmpBut = Button(tab1, text="If Register Jump", width=22, command=IfRegjumpTab)
+RegJmpBut = Button(tabs['1'], text="If Register Jump", width=22, command=IfRegjumpTab)
 RegJmpBut.place(x=950, y=520)
 
-StorPosBut = Button(tab1, text="Position Register", width=22, command=storPos)
+StorPosBut = Button(tabs['1'], text="Position Register", width=22, command=storPos)
 StorPosBut.place(x=950, y=560)
 
-callBut = Button(tab1, text="Call Program", width=22, command=insertCallProg)
+callBut = Button(tabs['1'], text="Call Program", width=22, command=insertCallProg)
 callBut.place(x=950, y=600)
 
-returnBut = Button(tab1, text="Return", width=22, command=insertReturn)
+returnBut = Button(tabs['1'], text="Return", width=22, command=insertReturn)
 returnBut.place(x=950, y=640)
 
-visFindBut = Button(tab1, text="Vision Find", width=22, command=insertvisFind)
+visFindBut = Button(tabs['1'], text="Vision Find", width=22, command=insertvisFind)
 visFindBut.place(x=950, y=680)
 
 ##
-IfOnjumpInputTabEntryField = Entry(tab1, width=5)
+IfOnjumpInputTabEntryField = Entry(tabs['1'], width=5)
 IfOnjumpInputTabEntryField.place(x=1107, y=363)
 
-IfOnjumpNumberTabEntryField = Entry(tab1, width=5)
+IfOnjumpNumberTabEntryField = Entry(tabs['1'], width=5)
 IfOnjumpNumberTabEntryField.place(x=1147, y=363)
 
-IfOffjumpInputTabEntryField = Entry(tab1, width=5)
+IfOffjumpInputTabEntryField = Entry(tabs['1'], width=5)
 IfOffjumpInputTabEntryField.place(x=1107, y=403)
 
-IfOffjumpNumberTabEntryField = Entry(tab1, width=5)
+IfOffjumpNumberTabEntryField = Entry(tabs['1'], width=5)
 IfOffjumpNumberTabEntryField.place(x=1147, y=403)
 
-servoNumEntryField = Entry(tab1, width=5)
+servoNumEntryField = Entry(tabs['1'], width=5)
 servoNumEntryField.place(x=1107, y=443)
 
-servoPosEntryField = Entry(tab1, width=5)
+servoPosEntryField = Entry(tabs['1'], width=5)
 servoPosEntryField.place(x=1147, y=443)
 
-regNumEntryField = Entry(tab1, width=5)
+regNumEntryField = Entry(tabs['1'], width=5)
 regNumEntryField.place(x=1107, y=483)
 
-regEqEntryField = Entry(tab1, width=5)
+regEqEntryField = Entry(tabs['1'], width=5)
 regEqEntryField.place(x=1147, y=483)
 
-regNumJmpEntryField = Entry(tab1, width=5)
+regNumJmpEntryField = Entry(tabs['1'], width=5)
 regNumJmpEntryField.place(x=1107, y=523)
 
-regEqJmpEntryField = Entry(tab1, width=5)
+regEqJmpEntryField = Entry(tabs['1'], width=5)
 regEqJmpEntryField.place(x=1147, y=523)
 
-regTabJmpEntryField = Entry(tab1, width=5)
+regTabJmpEntryField = Entry(tabs['1'], width=5)
 regTabJmpEntryField.place(x=1187, y=523)
 
-storPosNumEntryField = Entry(tab1, width=5)
+storPosNumEntryField = Entry(tabs['1'], width=5)
 storPosNumEntryField.place(x=1107, y=563)
 
-storPosElEntryField = Entry(tab1, width=5)
+storPosElEntryField = Entry(tabs['1'], width=5)
 storPosElEntryField.place(x=1147, y=563)
 
-storPosValEntryField = Entry(tab1, width=5)
+storPosValEntryField = Entry(tabs['1'], width=5)
 storPosValEntryField.place(x=1187, y=563)
 
-changeProgEntryField = Entry(tab1, width=22)
+changeProgEntryField = Entry(tabs['1'], width=22)
 changeProgEntryField.place(x=1107, y=603)
 
-visPassEntryField = Entry(tab1, width=5)
+visPassEntryField = Entry(tabs['1'], width=5)
 visPassEntryField.place(x=1107, y=683)
 
-visFailEntryField = Entry(tab1, width=5)
+visFailEntryField = Entry(tabs['1'], width=5)
 visFailEntryField.place(x=1147, y=683)
 
 
-manEntLab = Label(tab1, font=("Arial", 6), text="Manual Program Entry")
+manEntLab = Label(tabs['1'], font=("Arial", 6), text="Manual Program Entry")
 manEntLab.place(x=10, y=685)
 
-ifOnLab = Label(tab1, font=("Arial", 6), text=" Input            Tab")
+ifOnLab = Label(tabs['1'], font=("Arial", 6), text=" Input            Tab")
 ifOnLab.place(x=1107, y=350)
 
-ifOffLab = Label(tab1, font=("Arial", 6), text=" Input            Tab")
+ifOffLab = Label(tabs['1'], font=("Arial", 6), text=" Input            Tab")
 ifOffLab.place(x=1107, y=390)
 
-regEqLab = Label(tab1, font=("Arial", 6), text="Register       (++/--)")
+regEqLab = Label(tabs['1'], font=("Arial", 6), text="Register       (++/--)")
 regEqLab.place(x=1107, y=469)
 
-ifregTabJmpLab = Label(tab1, font=("Arial", 6), text="Register        Num         Tab")
+ifregTabJmpLab = Label(tabs['1'], font=("Arial", 6), text="Register        Num         Tab")
 ifregTabJmpLab.place(x=1107, y=509)
 
-servoLab = Label(tab1, font=("Arial", 6), text="Number      Position")
+servoLab = Label(tabs['1'], font=("Arial", 6), text="Number      Position")
 servoLab.place(x=1107, y=430)
 
-storPosEqLab = Label(tab1, font=("Arial", 6), text=" Pos Reg      Element       (++/--)")
+storPosEqLab = Label(tabs['1'], font=("Arial", 6), text=" Pos Reg      Element       (++/--)")
 storPosEqLab.place(x=1107, y=549)
 
-visPassLab = Label(tab1, font=("Arial", 6), text="Pass Tab     Fail Tab")
+visPassLab = Label(tabs['1'], font=("Arial", 6), text="Pass Tab     Fail Tab")
 visPassLab.place(x=1107, y=670)
 
 
-ProgBut = Button(tab1, text="Load Program", command=loadProg)
+ProgBut = Button(tabs['1'], text="Load Program", command=loadProg)
 ProgBut.place(x=202, y=42)
 
 
-runProgBut = Button(tab1, command=runProg)
+runProgBut = Button(tabs['1'], command=runProg)
 playPhoto = PhotoImage(file="play-icon.gif")
 runProgBut.config(image=playPhoto)
 runProgBut.place(x=20, y=80)
 
-xboxBut = Button(tab1, command=xbox)
+xboxBut = Button(tabs['1'], command=xbox)
 xboxPhoto = PhotoImage(file="xbox.gif")
 xboxBut.config(image=xboxPhoto)
 xboxBut.place(x=700, y=80)
 
-stopProgBut = Button(tab1, command=stopProg)
+stopProgBut = Button(tabs['1'], command=stopProg)
 stopPhoto = PhotoImage(file="stop-icon.gif")
 stopProgBut.config(image=stopPhoto)
 stopProgBut.place(x=220, y=80)
 
-revBut = Button(tab1, text="REV ", command=stepRev)
+revBut = Button(tabs['1'], text="REV ", command=stepRev)
 revBut.place(x=105, y=80)
 
-fwdBut = Button(tab1, text="FWD", command=stepFwd)
+fwdBut = Button(tabs['1'], text="FWD", command=stepFwd)
 fwdBut.place(x=160, y=80)
 
 
-IncJogCbut = Checkbutton(tab1, text="Incremental Jog", variable=IncJogStat)
+IncJogCbut = Checkbutton(tabs['1'], text="Incremental Jog", variable=IncJogStat)
 IncJogCbut.place(x=412, y=46)
 
 
@@ -1528,10 +1094,15 @@ TRxjogPosBut.bind("<ButtonRelease>", StopJog)
 TRxjogPosBut.place(x=1130, y=300, width=30, height=25)
 
 
-####################################################################################################################################################
-####################################################################################################################################################
-####################################################################################################################################################
-####TAB 2
+"""
+---------- ---------- ----------
+---------- ---------- ----------
+---------- ---------- ----------
+TAB 2
+---------- ---------- ----------
+---------- ---------- ----------
+---------- ---------- ----------
+"""
 
 
 ### 2 LABELS#################################################################
@@ -2277,16 +1848,16 @@ R16EntryField.place(x=30, y=480)
 
 """refactored: SP_9_E1 is now sp_entry[0][8] """
 mk_entry = lambda: Entry(tab4, width=5)
-sp_entry_fields = [ [mk_entry() for e in range(16)] for sp in range(6) ]
+sp_entry_fields = [[mk_entry() for e in range(16)] for sp in range(6)]
 
-coordinates = [[(400+(40*j),30*(i+1)) for i in range(16)] for j in range(6)]
+coordinates = [[(400 + (40 * j), 30 * (i + 1)) for i in range(16)] for j in range(6)]
 
 # list flatten
 sp_entries = sum(sp_entries)
 coordinates = sum(coordinates)
 
-for entry, (x,y) in zip(sp_entries, coordinates):
-    entry.place(x=x,y=y)
+for entry, (x, y) in zip(sp_entries, coordinates):
+    entry.place(x=x, y=y)
 
 ####################################################################################################################################################
 ####################################################################################################################################################
@@ -2354,9 +1925,9 @@ texts = [
 ]
 labels = [Label(tab5, text=t) for t in texts]
 
-VisInTypeLab, VisXfoundLab, VisYfoundLab, VisRZfoundLab, VisXpixfoundLab, VisYpixfoundLab = *labels
+VisInTypeLab, VisXfoundLab, VisYfoundLab, VisRZfoundLab, VisXpixfoundLab, VisYpixfoundLab = labels
 
-#TODO: finish abstracting labels above
+# TODO: finish abstracting labels above
 
 ### 5 BUTTONS################################################################
 #############################################################################
@@ -2795,7 +2366,7 @@ R15EntryField.insert(0, "0")
 R16EntryField.insert(0, "0")
 
 for entry in sp_entries:
-    entry.insert(0,"0")
+    entry.insert(0, "0")
 
 servo0onEntryField.insert(0, str(Servo0on))
 servo0offEntryField.insert(0, str(Servo0off))
@@ -2924,8 +2495,16 @@ tkinter.messagebox.showwarning("AR4 License / Copyright notice", msg)
 xboxUse = 0
 
 
-tab1.mainloop()
+tabs['1'].mainloop()
 
 
 # manEntryField.delete(0, 'end')
 # manEntryField.insert(0,value)
+
+
+def main():
+    """docstring"""
+
+
+if __name__ == "__main__":
+    main()
