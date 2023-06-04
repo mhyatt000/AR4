@@ -171,35 +171,25 @@ def xbox():
                             almStatusLab2.config(text="JOGGING X & Y AXIS", style="Warn.TLabel")
 
                     ##CARTESIAN DIR JOG
-                    value = float(incrementEntryField.get()
-                    if mainmode == 2 and event.code == "ABS_HAT0Y"
-                        elif (
-                            and event.state == -1
-                            and jogMode == 1
-                        ):
+                    value = float(incrementEntryField.get())
+                    if (mainmode == 2 and event.code == "ABS_HAT0Y"):
+                        if ( event.state == -1 and jogMode == 1):
                             XjogNeg(value)
-                        elif (
-                            and event.state == 1
-                            and jogMode == 1
-                        ):
+                        elif ( event.state == 1 and jogMode == 1):
                             XjogPos(value)
-                        elif (
-                            and event.state == 1
+                        elif ( event.state == 1
                             and jogMode == 1
                         ):
                             YjogNeg(value)
-                        elif (
-                            and event.state == -1
+                        elif ( event.state == -1
                             and jogMode == 1
                         ):
                             YjogPos(value)
-                        elif (
-                            and event.state == 1
+                        elif ( event.state == 1
                             and jogMode == 2
                         ):
                             ZjogNeg(value)
-                        elif (
-                            and event.state == -1
+                        elif ( event.state == -1
                             and jogMode == 2
                         ):
                             ZjogPos(value)

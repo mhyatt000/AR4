@@ -1,4 +1,5 @@
 import datetime
+import os.path as osp
 import math
 from multiprocessing.resource_sharer import stop
 import os
@@ -24,11 +25,14 @@ from ttkthemes import ThemedStyle
 from program import *
 from teach import *
 from exc.execution import *
-
+from jog import *
+from theme import *
+from calibrate import *
 
 # from pygrabber.dshow_graph import FilterGraph
 
-DIR = pathlib.Path(__file__).parent.resolve()
+ROOT = osp.dirname(__file__)
+ASSETS = osp.join(ROOT, "assets")
 
 cropping = False
 
@@ -70,7 +74,7 @@ SplineTrue = False
 nb = tkinter.ttk.Notebook(root, width=1536, height=792)
 nb.place(x=0, y=0)
 
-tabs = {str(i):tkinter.ttk.Frame(nb) for i in range(1,7+1)}
+tabs = {str(i): tkinter.ttk.Frame(nb) for i in range(1, 7 + 1)}
 tabnames = [
     " Main Controls ",
     "  Config Settings  ",
@@ -103,57 +107,59 @@ def startup():
 ### COMMUNICATION DEFS ################################################################################################################# COMMUNICATION DEFS ###
 ###############################################################################################################################################################
 
-serials = [None, None]
 
+class COM:
+    """communication handler"""
 
-def setCom():
+    def __init__(self):
+        serials = [None, None]
 
-    now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    boards = ["TEENSY 4.1 CONTROLLER", "ARDUINO IO BOARD"]
-
-    def set_status(text, style):
-        almStatusLab.config(text=text, style=style)
-        almStatusLab2.config(text=text, style=style)
-
-    try:
-        # port = "COM" + comPortEntryField.get()
-        # baud = 9600
-
-        ser2 = None
-        if ser2:
-            pass
-        """ 
+        """
+        port = "COM" + comPortEntryField.get()
         port = "COM" + com2PortEntryField.get()
-        baud = 115200
-        ser 2 = serial.Serial(port, baud)
         """
 
-        # TODO: mhyatt temp
-        port = "/dev/cu.usbmodem123843001"
-        serials[0] = serial.Serial(port, baud)
+    def set(self, idx=0):
+        """set teensy communication"""
 
-        text = f"COMMUNICATIONS STARTED WITH {board}"
-        style = "OK.TLabel"
+        now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
+        board = ["TEENSY 4.1 CONTROLLER", "ARDUINO IO BOARD"][idx]
+        baud = [9600, 115200][idx]
 
-        set_status(text, style)
-        tab6.ElogView.insert(END, f"{now} - {text}")
-        value = tab6.ElogView.get(0, END)
-        pickle.dump(value, open("ErrorLog", "wb"))
+        def set_status(text, style):
+            almStatusLab.config(text=text, style=style)
+            almStatusLab2.config(text=text, style=style)
 
-        time.sleep(1)
-        ser.flushInput()
-        startup()
+        def log_message(msg):
+            tabs["6"].ElogView.insert(END, f"{now} - {msg}")
+            value = tabs["6"].ElogView.get(0, END)
+            pickle.dump(value, open("ErrorLog", "wb"))
 
-    except Exception as ex:
+        try:
+            port = "/dev/cu.usbmodem123843001"
+            self.serials[idx] = serial.Serial(port, baud)
 
-        text = (f"UNABLE TO ESTABLISH COMMUNICATIONS WITH {board}",)
-        style = ("Alarm.TLabel",)
+            text = f"COMMUNICATIONS STARTED WITH {board}"
+            style = "OK.TLabel"
 
-        set_status(text, style)
-        tab6.ElogView.insert(END, f"{now} - {text}")
-        value = tab6.ElogView.get(0, END)
-        pickle.dump(value, open("ErrorLog", "wb"))
+            # TODO: use log_message()
+            # TODO: make util.py
 
+            set_status(text, style)
+            log_message(text)
+            time.sleep(1)
+            ser.flushInput()
+            startup()
+
+        except Exception as ex:
+
+            text = (f"UNABLE TO ESTABLISH COMMUNICATIONS WITH {board}",)
+            style = "Alarm.TLabel"
+            set_status(text, style)
+            log_message(text)
+
+
+com = COM()
 
 ##### TAB 1 #####
 
@@ -163,45 +169,45 @@ def setCom():
 # TODO: seems like cartjog is the other important frame. maybe make a frame organizer somehow?
 
 CartjogFrame = Frame(
-    tabs['1'],
+    tabs["1"],
     width=1536,
     height=792,
 )
 CartjogFrame.place(x=330, y=0)
 
-curRowLab = Label(tabs['1'], text="Current Row:")
+curRowLab = Label(tabs["1"], text="Current Row:")
 curRowLab.place(x=98, y=120)
 
 
-almStatusLab = Label(tabs['1'], text="SYSTEM READY - NO ACTIVE ALARMS", style="OK.TLabel")
+almStatusLab = Label(tabs["1"], text="SYSTEM READY - NO ACTIVE ALARMS", style="OK.TLabel")
 almStatusLab.place(x=25, y=12)
 
-xbcStatusLab = Label(tabs['1'], text="Xbox OFF")
+xbcStatusLab = Label(tabs["1"], text="Xbox OFF")
 xbcStatusLab.place(x=1270, y=80)
 
-runStatusLab = Label(tabs['1'], text="PROGRAM STOPPED")
+runStatusLab = Label(tabs["1"], text="PROGRAM STOPPED")
 runStatusLab.place(x=20, y=150)
 
 
-ProgLab = Label(tabs['1'], text="Program:")
+ProgLab = Label(tabs["1"], text="Program:")
 ProgLab.place(x=10, y=45)
 
-jogIncrementLab = Label(tabs['1'], text="Increment Value:")
+jogIncrementLab = Label(tabs["1"], text="Increment Value:")
 # jogIncrementLab.place(x=370, y=45)
 
-speedLab = Label(tabs['1'], text="Speed")
+speedLab = Label(tabs["1"], text="Speed")
 speedLab.place(x=300, y=83)
 
-ACCLab = Label(tabs['1'], text="Acceleration               %")
+ACCLab = Label(tabs["1"], text="Acceleration               %")
 ACCLab.place(x=300, y=103)
 
-DECLab = Label(tabs['1'], text="Deceleration               %")
+DECLab = Label(tabs["1"], text="Deceleration               %")
 DECLab.place(x=300, y=123)
 
-DECLab = Label(tabs['1'], text="Ramp                           %")
+DECLab = Label(tabs["1"], text="Ramp                           %")
 DECLab.place(x=300, y=143)
 
-RoundLab = Label(tabs['1'], text="Rounding               mm")
+RoundLab = Label(tabs["1"], text="Rounding               mm")
 RoundLab.place(x=525, y=82)
 
 
@@ -224,16 +230,18 @@ places = {
 
 # cart jog labels
 cj_labels = {x: mk_cj_label(x) for x in places.keys()}
-for k,v in cj_labels.items():
+for k, v in cj_labels.items():
     v.place(**places[k])
 
 
 ### JOINT CONTROL ################################################################
 
-class JointCTR:
+
+class JointCTRL:
     """A robotic joint controller"""
 
-    active = []
+    active = []  # all axis
+    main = []  # 6 main axis
 
     # pos, neg
     limits = [
@@ -250,18 +258,20 @@ class JointCTR:
 
     def __init__(self):
 
-        JointCTR.active.append(self)
+        JointCTRL.active.append(self)
+        if len(JointCTRL.main) < 6:
+            JointCTRL.main.append(self)
 
-        self.idx = len(JointCTR.active)
-        self.name = "J{self.idx}"
+        self.idx = len(JointCTRL.active)
+        self.name = f"J{self.idx}"
 
         # int
         self.open_loop_stat = None
-        self.cal_stat = [None, None]
+        self.cal_stat = [IntVar(), IntVar()]
 
-        self.limits = JointCTR.limits[self.idx]
+        self.limits = JointCTRL.limits[self.idx]
         self.range = sum(self.limits)
-        self.limits = {'pos':self.limits[0], 'neg':self.limits[1]}
+        self.limits = {"pos": self.limits[0], "neg": self.limits[1]}
 
 
 # TODO: remove since it was for testing
@@ -273,25 +283,25 @@ class JointFrame:
 
     active = []
 
-    def __init__(self, x,y):
+    def __init__(self, x, y):
 
-        self.ctr = JointCTR()
+        self.ctr = JointCTRL()
 
-        self.frame = Frame(tabs['1'], width=340, height=40)
+        self.frame = Frame(tabs["1"], width=340, height=40)
         self.frame.place(x=x, y=y)
 
         self.entry = Entry(self.frame, width=5)
         self.entry.place(x=35, y=9)
 
         self.locations = [
-                (5,5),
-                (115,25),
-                (270,25),
-                (190,25),
+            (5, 5),
+            (115, 25),
+            (270, 25),
+            (190, 25),
         ]
         self.mk_labels()
         self.mk_buttons()
-        self.mk_slider(115,7,180)
+        self.mk_slider(115, 7, 180)
         JointFrame.active.append(self)
 
     def mk_buttons(self):
@@ -307,37 +317,40 @@ class JointFrame:
             button.bind("<ButtonRelease>", self.stop_jog)
             button.place(x=x, y=7, width=30, height=25)
 
-        self.buttons['neg'].bind("<ButtonPress>", self.SeljogNeg)
-        self.buttons['pos'].bind("<ButtonPress>", self.SeljogPos)
-
+        self.buttons["neg"].bind("<ButtonPress>", self.SeljogNeg)
+        self.buttons["pos"].bind("<ButtonPress>", self.SeljogPos)
 
     def mk_labels(self):
         """docstring"""
 
         self.labels = {
-            'main':Label(self.frame, font=("Arial", 18), text=self.ctr.name),
+            "main": Label(self.frame, font=("Arial", 18), text=self.ctr.name),
             "neg_lim": Label(
-                self.frame, font=("Arial", 8), text=str(-self.ctr.limits['neg']), style="Jointlim.TLabel"
+                self.frame,
+                font=("Arial", 8),
+                text=str(-self.ctr.limits["neg"]),
+                style="Jointlim.TLabel",
             ),
             "pos_lim": Label(
-                self.frame, font=("Arial", 8), text=str(self.ctr.limits['pos']), style="Jointlim.TLabel"
+                self.frame,
+                font=("Arial", 8),
+                text=str(self.ctr.limits["pos"]),
+                style="Jointlim.TLabel",
             ),
             "slide": Label(self.frame),
         }
 
         for i, (k, label) in enumerate(self.labels.items()):
-            loc = {a:b for a,b in zip(['x','y'],self.locations[i])}
+            loc = {a: b for a, b in zip(["x", "y"], self.locations[i])}
             label.place(**loc)
 
-
-
-    def mk_slider(self,x,y,length):
+    def mk_slider(self, x, y, length):
         """makes slider"""
 
         self.slider = Scale(
             self.frame,
-            from_=-self.ctr.limits['neg'],
-            to=self.ctr.limits['pos'],
+            from_=-self.ctr.limits["neg"],
+            to=self.ctr.limits["pos"],
             length=length,
             orient=HORIZONTAL,
             command=self.sliderUpdate,
@@ -393,30 +406,30 @@ class JointFrame:
 class ExtJointFrame(JointFrame):
     """JointFrame for external axis"""
 
-    def __init__(self, x,y):
+    def __init__(self, x, y):
         # super(ExtJointFrame,self).__init__(x,y)
 
-        self.ctr = JointCTR()
+        self.ctr = JointCTRL()
 
         # TODO: finish
-        self.frame = Frame(tabs['1'], width=145, height=100)
+        self.frame = Frame(tabs["1"], width=145, height=100)
         self.frame["relief"] = "raised"
         self.frame.place(x=x, y=y)
 
         self.locations = [
-                (15,5),
-                (10,30),
-                (110,30),
-                (60,70),
+            (15, 5),
+            (10, 30),
+            (110, 30),
+            (60, 70),
         ]
         self.mk_labels()
-        self.labels['main'].config(text=f'{self.ctr.name} Axis')
+        self.labels["main"].config(text=f"{self.ctr.name} Axis")
 
         self.entry = Entry(self.frame, width=5)
         self.entry.place(x=95, y=9)
 
         self.mk_buttons()
-        self.mk_slider(x=10,y=43,length=125)
+        self.mk_slider(x=10, y=43, length=125)
 
         # TODO: what about cls.active ??
 
@@ -424,10 +437,9 @@ class ExtJointFrame(JointFrame):
         """makes buttons"""
         super().mk_buttons()
 
-        xy = [dict(x=10, y=65), dict(x=105, y=65)] # relative button coordinates
-        for i,(k,button) in enumerate(self.buttons.items()):
+        xy = [dict(x=10, y=65), dict(x=105, y=65)]  # relative button coordinates
+        for i, (k, button) in enumerate(self.buttons.items()):
             button.place(**xy[i])
-        
 
 
 joint_frames = [
@@ -445,57 +457,58 @@ joint_frames = [
 ####ENTRY FIELDS##########################################################
 ##########################################################################
 
-#TODO: how to clean this up?
+# TODO: how to clean this up?
 
-incrementEntryField = Entry(tabs['1'], width=4)
+incrementEntryField = Entry(tabs["1"], width=4)
 incrementEntryField.place(x=380, y=45)
 
-curRowEntryField = Entry(tabs['1'], width=4)
+curRowEntryField = Entry(tabs["1"], width=4)
 curRowEntryField.place(x=174, y=120)
 
-manEntryField = Entry(tabs['1'], width=105)
+manEntryField = Entry(tabs["1"], width=105)
 manEntryField.place(x=10, y=700)
 
-ProgEntryField = Entry(tabs['1'], width=20)
+ProgEntryField = Entry(tabs["1"], width=20)
 ProgEntryField.place(x=70, y=45)
 
 
-speedEntryField = Entry(tabs['1'], width=4)
+speedEntryField = Entry(tabs["1"], width=4)
 speedEntryField.place(x=380, y=80)
 
-ACCspeedField = Entry(tabs['1'], width=4)
+ACCspeedField = Entry(tabs["1"], width=4)
 ACCspeedField.place(x=380, y=100)
 
-DECspeedField = Entry(tabs['1'], width=4)
+DECspeedField = Entry(tabs["1"], width=4)
 DECspeedField.place(x=380, y=120)
 
-ACCrampField = Entry(tabs['1'], width=4)
+ACCrampField = Entry(tabs["1"], width=4)
 ACCrampField.place(x=380, y=140)
 
-roundEntryField = Entry(tabs['1'], width=4)
+roundEntryField = Entry(tabs["1"], width=4)
 roundEntryField.place(x=590, y=80)
 
 
-class CTJogger():
+class CTJogger:
     """Cartesian Jogger GUI Object"""
+
     "ie: XcurEntryField"
     # NOTE: is cur for current as in time or electricity?
 
     active = []
 
-    def __init__(self, x,y, label):
+    def __init__(self, x, y, label):
 
         self.entry = Entry(CartjogFrame, width=5)
         self.entry.place(x=x, y=y)
 
 
-CTJogger(660,195, 'X')
-CTJogger(750, 195, 'Y')
-CTJogger(840, 195, 'Z')
+CTJogger(660, 195, "X")
+CTJogger(750, 195, "Y")
+CTJogger(840, 195, "Z")
 
-CTJogger(930, 195, 'Rz')
-CTJogger(1020, 195, 'Ry')
-CTJogger(1110, 195, 'Rx')
+CTJogger(930, 195, "Rz")
+CTJogger(1020, 195, "Ry")
+CTJogger(1110, 195, "Rx")
 
 
 ###BUTTONS################################################################
@@ -510,25 +523,25 @@ def posRegFieldVisible(self):
         SavePosEntryField.place_forget()
 
 
-manInsBut = Button(tabs['1'], text="  Insert  ", command=manInsItem)
+manInsBut = Button(tabs["1"], text="  Insert  ", command=manInsItem)
 manInsBut.place(x=98, y=725)
 
-manRepBut = Button(tabs['1'], text="Replace", command=manReplItem)
+manRepBut = Button(tabs["1"], text="Replace", command=manReplItem)
 manRepBut.place(x=164, y=725)
 
-getSelBut = Button(tabs['1'], text="Get Selected", command=getSel)
+getSelBut = Button(tabs["1"], text="Get Selected", command=getSel)
 getSelBut.place(x=10, y=725)
 
-speedOption = StringVar(tabs['1'])
-speedMenu = OptionMenu(tabs['1'], speedOption, "Percent", "Percent", "Seconds", "mm per Sec")
+speedOption = StringVar(tabs["1"])
+speedMenu = OptionMenu(tabs["1"], speedOption, "Percent", "Percent", "Seconds", "mm per Sec")
 speedMenu.place(x=412, y=76)
 
 
 # single buttons
 
-options = StringVar(tabs['1'])
+options = StringVar(tabs["1"])
 menu = OptionMenu(
-    tabs['1'],
+    tabs["1"],
     options,
     "Move J",
     "Move J",
@@ -552,209 +565,209 @@ menu.grid(row=2, column=2)
 menu.config(width=18)
 menu.place(x=700, y=180)
 
-SavePosEntryField = Entry(tabs['1'], width=5)
+SavePosEntryField = Entry(tabs["1"], width=5)
 # SavePosEntryField.place(x=800, y=183)
 
 
-teachInsBut = Button(tabs['1'], text="Teach New Position", width=22, command=teachInsertBelSelected)
+teachInsBut = Button(tabs["1"], text="Teach New Position", width=22, command=teachInsertBelSelected)
 teachInsBut.place(x=700, y=220)
 
-teachReplaceBut = Button(tabs['1'], text="Modify Position", width=22, command=teachReplaceSelected)
+teachReplaceBut = Button(tabs["1"], text="Modify Position", width=22, command=teachReplaceSelected)
 teachReplaceBut.place(x=700, y=260)
 
-deleteBut = Button(tabs['1'], text="Delete", width=22, command=deleteitem)
+deleteBut = Button(tabs["1"], text="Delete", width=22, command=deleteitem)
 deleteBut.place(x=700, y=300)
 
-CalibrateBut = Button(tabs['1'], text="Auto Calibrate CMD", width=22, command=insCalibrate)
+CalibrateBut = Button(tabs["1"], text="Auto Calibrate CMD", width=22, command=insCalibrate)
 CalibrateBut.place(x=700, y=340)
 
-camOnBut = Button(tabs['1'], text="Camera On", width=22, command=cameraOn)
+camOnBut = Button(tabs["1"], text="Camera On", width=22, command=cameraOn)
 camOnBut.place(x=700, y=380)
 
-camOffBut = Button(tabs['1'], text="Camera Off", width=22, command=cameraOff)
+camOffBut = Button(tabs["1"], text="Camera Off", width=22, command=cameraOff)
 camOffBut.place(x=700, y=420)
 
 
 # buttons with 1 entry
 
-waitTimeBut = Button(tabs['1'], text="Wait Time (seconds)", width=22, command=waitTime)
+waitTimeBut = Button(tabs["1"], text="Wait Time (seconds)", width=22, command=waitTime)
 waitTimeBut.place(x=700, y=460)
 
-waitInputOnBut = Button(tabs['1'], text="Wait Input ON", width=22, command=waitInputOn)
+waitInputOnBut = Button(tabs["1"], text="Wait Input ON", width=22, command=waitInputOn)
 waitInputOnBut.place(x=700, y=500)
 
-waitInputOffBut = Button(tabs['1'], text="Wait Input OFF", width=22, command=waitInputOff)
+waitInputOffBut = Button(tabs["1"], text="Wait Input OFF", width=22, command=waitInputOff)
 waitInputOffBut.place(x=700, y=540)
 
-setOutputOnBut = Button(tabs['1'], text="Set Output On", width=22, command=setOutputOn)
+setOutputOnBut = Button(tabs["1"], text="Set Output On", width=22, command=setOutputOn)
 setOutputOnBut.place(x=700, y=580)
 
-setOutputOffBut = Button(tabs['1'], text="Set Output OFF", width=22, command=setOutputOff)
+setOutputOffBut = Button(tabs["1"], text="Set Output OFF", width=22, command=setOutputOff)
 setOutputOffBut.place(x=700, y=620)
 
-tabNumBut = Button(tabs['1'], text="Create Tab", width=22, command=tabNumber)
+tabNumBut = Button(tabs["1"], text="Create Tab", width=22, command=tabNumber)
 tabNumBut.place(x=700, y=660)
 
-jumpTabBut = Button(tabs['1'], text="Jump to Tab", width=22, command=jumpTab)
+jumpTabBut = Button(tabs["1"], text="Jump to Tab", width=22, command=jumpTab)
 jumpTabBut.place(x=700, y=700)
 
 
-waitTimeEntryField = Entry(tabs['1'], width=5)
+waitTimeEntryField = Entry(tabs["1"], width=5)
 waitTimeEntryField.place(x=855, y=465)
 
-waitInputEntryField = Entry(tabs['1'], width=5)
+waitInputEntryField = Entry(tabs["1"], width=5)
 waitInputEntryField.place(x=855, y=505)
 
-waitInputOffEntryField = Entry(tabs['1'], width=5)
+waitInputOffEntryField = Entry(tabs["1"], width=5)
 waitInputOffEntryField.place(x=855, y=545)
 
-outputOnEntryField = Entry(tabs['1'], width=5)
+outputOnEntryField = Entry(tabs["1"], width=5)
 outputOnEntryField.place(x=855, y=585)
 
-outputOffEntryField = Entry(tabs['1'], width=5)
+outputOffEntryField = Entry(tabs["1"], width=5)
 outputOffEntryField.place(x=855, y=625)
 
-tabNumEntryField = Entry(tabs['1'], width=5)
+tabNumEntryField = Entry(tabs["1"], width=5)
 tabNumEntryField.place(x=855, y=665)
 
-jumpTabEntryField = Entry(tabs['1'], width=5)
+jumpTabEntryField = Entry(tabs["1"], width=5)
 jumpTabEntryField.place(x=855, y=705)
 
 
 # buttons with multiple entry
 
-IfOnjumpTabBut = Button(tabs['1'], text="If On Jump", width=22, command=IfOnjumpTab)
+IfOnjumpTabBut = Button(tabs["1"], text="If On Jump", width=22, command=IfOnjumpTab)
 IfOnjumpTabBut.place(x=950, y=360)
 
-IfOffjumpTabBut = Button(tabs['1'], text="If Off Jump", width=22, command=IfOffjumpTab)
+IfOffjumpTabBut = Button(tabs["1"], text="If Off Jump", width=22, command=IfOffjumpTab)
 IfOffjumpTabBut.place(x=950, y=400)
 
-servoBut = Button(tabs['1'], text="Servo", width=22, command=Servo)
+servoBut = Button(tabs["1"], text="Servo", width=22, command=Servo)
 servoBut.place(x=950, y=440)
 
-RegNumBut = Button(tabs['1'], text="Register", width=22, command=insertRegister)
+RegNumBut = Button(tabs["1"], text="Register", width=22, command=insertRegister)
 RegNumBut.place(x=950, y=480)
 
-RegJmpBut = Button(tabs['1'], text="If Register Jump", width=22, command=IfRegjumpTab)
+RegJmpBut = Button(tabs["1"], text="If Register Jump", width=22, command=IfRegjumpTab)
 RegJmpBut.place(x=950, y=520)
 
-StorPosBut = Button(tabs['1'], text="Position Register", width=22, command=storPos)
+StorPosBut = Button(tabs["1"], text="Position Register", width=22, command=storPos)
 StorPosBut.place(x=950, y=560)
 
-callBut = Button(tabs['1'], text="Call Program", width=22, command=insertCallProg)
+callBut = Button(tabs["1"], text="Call Program", width=22, command=insertCallProg)
 callBut.place(x=950, y=600)
 
-returnBut = Button(tabs['1'], text="Return", width=22, command=insertReturn)
+returnBut = Button(tabs["1"], text="Return", width=22, command=insertReturn)
 returnBut.place(x=950, y=640)
 
-visFindBut = Button(tabs['1'], text="Vision Find", width=22, command=insertvisFind)
+visFindBut = Button(tabs["1"], text="Vision Find", width=22, command=insertvisFind)
 visFindBut.place(x=950, y=680)
 
 ##
-IfOnjumpInputTabEntryField = Entry(tabs['1'], width=5)
+IfOnjumpInputTabEntryField = Entry(tabs["1"], width=5)
 IfOnjumpInputTabEntryField.place(x=1107, y=363)
 
-IfOnjumpNumberTabEntryField = Entry(tabs['1'], width=5)
+IfOnjumpNumberTabEntryField = Entry(tabs["1"], width=5)
 IfOnjumpNumberTabEntryField.place(x=1147, y=363)
 
-IfOffjumpInputTabEntryField = Entry(tabs['1'], width=5)
+IfOffjumpInputTabEntryField = Entry(tabs["1"], width=5)
 IfOffjumpInputTabEntryField.place(x=1107, y=403)
 
-IfOffjumpNumberTabEntryField = Entry(tabs['1'], width=5)
+IfOffjumpNumberTabEntryField = Entry(tabs["1"], width=5)
 IfOffjumpNumberTabEntryField.place(x=1147, y=403)
 
-servoNumEntryField = Entry(tabs['1'], width=5)
+servoNumEntryField = Entry(tabs["1"], width=5)
 servoNumEntryField.place(x=1107, y=443)
 
-servoPosEntryField = Entry(tabs['1'], width=5)
+servoPosEntryField = Entry(tabs["1"], width=5)
 servoPosEntryField.place(x=1147, y=443)
 
-regNumEntryField = Entry(tabs['1'], width=5)
+regNumEntryField = Entry(tabs["1"], width=5)
 regNumEntryField.place(x=1107, y=483)
 
-regEqEntryField = Entry(tabs['1'], width=5)
+regEqEntryField = Entry(tabs["1"], width=5)
 regEqEntryField.place(x=1147, y=483)
 
-regNumJmpEntryField = Entry(tabs['1'], width=5)
+regNumJmpEntryField = Entry(tabs["1"], width=5)
 regNumJmpEntryField.place(x=1107, y=523)
 
-regEqJmpEntryField = Entry(tabs['1'], width=5)
+regEqJmpEntryField = Entry(tabs["1"], width=5)
 regEqJmpEntryField.place(x=1147, y=523)
 
-regTabJmpEntryField = Entry(tabs['1'], width=5)
+regTabJmpEntryField = Entry(tabs["1"], width=5)
 regTabJmpEntryField.place(x=1187, y=523)
 
-storPosNumEntryField = Entry(tabs['1'], width=5)
+storPosNumEntryField = Entry(tabs["1"], width=5)
 storPosNumEntryField.place(x=1107, y=563)
 
-storPosElEntryField = Entry(tabs['1'], width=5)
+storPosElEntryField = Entry(tabs["1"], width=5)
 storPosElEntryField.place(x=1147, y=563)
 
-storPosValEntryField = Entry(tabs['1'], width=5)
+storPosValEntryField = Entry(tabs["1"], width=5)
 storPosValEntryField.place(x=1187, y=563)
 
-changeProgEntryField = Entry(tabs['1'], width=22)
+changeProgEntryField = Entry(tabs["1"], width=22)
 changeProgEntryField.place(x=1107, y=603)
 
-visPassEntryField = Entry(tabs['1'], width=5)
+visPassEntryField = Entry(tabs["1"], width=5)
 visPassEntryField.place(x=1107, y=683)
 
-visFailEntryField = Entry(tabs['1'], width=5)
+visFailEntryField = Entry(tabs["1"], width=5)
 visFailEntryField.place(x=1147, y=683)
 
 
-manEntLab = Label(tabs['1'], font=("Arial", 6), text="Manual Program Entry")
+manEntLab = Label(tabs["1"], font=("Arial", 6), text="Manual Program Entry")
 manEntLab.place(x=10, y=685)
 
-ifOnLab = Label(tabs['1'], font=("Arial", 6), text=" Input            Tab")
+ifOnLab = Label(tabs["1"], font=("Arial", 6), text=" Input            Tab")
 ifOnLab.place(x=1107, y=350)
 
-ifOffLab = Label(tabs['1'], font=("Arial", 6), text=" Input            Tab")
+ifOffLab = Label(tabs["1"], font=("Arial", 6), text=" Input            Tab")
 ifOffLab.place(x=1107, y=390)
 
-regEqLab = Label(tabs['1'], font=("Arial", 6), text="Register       (++/--)")
+regEqLab = Label(tabs["1"], font=("Arial", 6), text="Register       (++/--)")
 regEqLab.place(x=1107, y=469)
 
-ifregTabJmpLab = Label(tabs['1'], font=("Arial", 6), text="Register        Num         Tab")
+ifregTabJmpLab = Label(tabs["1"], font=("Arial", 6), text="Register        Num         Tab")
 ifregTabJmpLab.place(x=1107, y=509)
 
-servoLab = Label(tabs['1'], font=("Arial", 6), text="Number      Position")
+servoLab = Label(tabs["1"], font=("Arial", 6), text="Number      Position")
 servoLab.place(x=1107, y=430)
 
-storPosEqLab = Label(tabs['1'], font=("Arial", 6), text=" Pos Reg      Element       (++/--)")
+storPosEqLab = Label(tabs["1"], font=("Arial", 6), text=" Pos Reg      Element       (++/--)")
 storPosEqLab.place(x=1107, y=549)
 
-visPassLab = Label(tabs['1'], font=("Arial", 6), text="Pass Tab     Fail Tab")
+visPassLab = Label(tabs["1"], font=("Arial", 6), text="Pass Tab     Fail Tab")
 visPassLab.place(x=1107, y=670)
 
 
-ProgBut = Button(tabs['1'], text="Load Program", command=loadProg)
+ProgBut = Button(tabs["1"], text="Load Program", command=loadProg)
 ProgBut.place(x=202, y=42)
 
 
-runProgBut = Button(tabs['1'], command=runProg)
-playPhoto = PhotoImage(file="play-icon.gif")
+runProgBut = Button(tabs["1"], command=runProg)
+playPhoto = PhotoImage(file=osp.join(ASSETS, "play-icon.gif"))
 runProgBut.config(image=playPhoto)
 runProgBut.place(x=20, y=80)
 
-xboxBut = Button(tabs['1'], command=xbox)
-xboxPhoto = PhotoImage(file="xbox.gif")
+xboxBut = Button(tabs["1"], command=xbox)
+xboxPhoto = PhotoImage(file=osp.join(ASSETS, "xbox.gif"))
 xboxBut.config(image=xboxPhoto)
 xboxBut.place(x=700, y=80)
 
-stopProgBut = Button(tabs['1'], command=stopProg)
-stopPhoto = PhotoImage(file="stop-icon.gif")
+stopProgBut = Button(tabs["1"], command=stopProg)
+stopPhoto = PhotoImage(file=osp.join(ASSETS, "stop-icon.gif"))
 stopProgBut.config(image=stopPhoto)
 stopProgBut.place(x=220, y=80)
 
-revBut = Button(tabs['1'], text="REV ", command=stepRev)
+revBut = Button(tabs["1"], text="REV ", command=stepRev)
 revBut.place(x=105, y=80)
 
-fwdBut = Button(tabs['1'], text="FWD", command=stepFwd)
+fwdBut = Button(tabs["1"], text="FWD", command=stepFwd)
 fwdBut.place(x=160, y=80)
 
 
-IncJogCbut = Checkbutton(tabs['1'], text="Incremental Jog", variable=IncJogStat)
+IncJogCbut = Checkbutton(tabs["1"], text="Incremental Jog", variable=IncJogStat)
 IncJogCbut.place(x=412, y=46)
 
 
@@ -1108,343 +1121,335 @@ TAB 2
 ### 2 LABELS#################################################################
 #############################################################################
 
-ComPortLab = Label(tab2, text="TEENSY COM PORT:")
+ComPortLab = Label(tabs["2"], text="TEENSY COM PORT:")
 ComPortLab.place(x=66, y=90)
 
-ComPortLab = Label(tab2, text="IO BOARD COM PORT:")
+ComPortLab = Label(tabs["2"], text="IO BOARD COM PORT:")
 ComPortLab.place(x=60, y=160)
 
-almStatusLab2 = Label(tab2, text="SYSTEM READY - NO ACTIVE ALARMS", style="OK.TLabel")
+almStatusLab2 = Label(tabs["2"], text="SYSTEM READY - NO ACTIVE ALARMS", style="OK.TLabel")
 almStatusLab2.place(x=25, y=20)
 
 
-ToolFrameLab = Label(tab2, text="Tool Frame Offset")
+ToolFrameLab = Label(tabs["2"], text="Tool Frame Offset")
 ToolFrameLab.place(x=970, y=60)
 
-UFxLab = Label(tab2, font=("Arial", 11), text="X")
+UFxLab = Label(tabs["2"], font=("Arial", 11), text="X")
 UFxLab.place(x=920, y=90)
 
-UFyLab = Label(tab2, font=("Arial", 11), text="Y")
+UFyLab = Label(tabs["2"], font=("Arial", 11), text="Y")
 UFyLab.place(x=960, y=90)
 
-UFzLab = Label(tab2, font=("Arial", 11), text="Z")
+UFzLab = Label(tabs["2"], font=("Arial", 11), text="Z")
 UFzLab.place(x=1000, y=90)
 
-UFRxLab = Label(tab2, font=("Arial", 11), text="Rz")
+UFRxLab = Label(tabs["2"], font=("Arial", 11), text="Rz")
 UFRxLab.place(x=1040, y=90)
 
-UFRyLab = Label(tab2, font=("Arial", 11), text="Ry")
+UFRyLab = Label(tabs["2"], font=("Arial", 11), text="Ry")
 UFRyLab.place(x=1080, y=90)
 
-UFRzLab = Label(tab2, font=("Arial", 11), text="Rx")
+UFRzLab = Label(tabs["2"], font=("Arial", 11), text="Rx")
 UFRzLab.place(x=1120, y=90)
 
-comLab = Label(tab2, text="Communication")
+comLab = Label(tabs["2"], text="Communication")
 comLab.place(x=72, y=60)
 
-jointCalLab = Label(tab2, text="Robot Calibration")
+jointCalLab = Label(tabs["2"], text="Robot Calibration")
 jointCalLab.place(x=290, y=60)
 
-axis7Lab = Label(tab2, text="7th Axis Calibration")
+axis7Lab = Label(tabs["2"], text="7th Axis Calibration")
 axis7Lab.place(x=665, y=300)
 
-axis7lengthLab = Label(tab2, text="7th Axis Length:")
+axis7lengthLab = Label(tabs["2"], text="7th Axis Length:")
 axis7lengthLab.place(x=651, y=340)
 
-axis7rotLab = Label(tab2, text="MM per Rotation:")
+axis7rotLab = Label(tabs["2"], text="MM per Rotation:")
 axis7rotLab.place(x=645, y=370)
 
-axis7stepsLab = Label(tab2, text="Drive Steps:")
+axis7stepsLab = Label(tabs["2"], text="Drive Steps:")
 axis7stepsLab.place(x=675, y=400)
 
-axis7pinsetLab = Label(tab2, font=("Arial", 8), text="StepPin = 12 / DirPin = 13 / CalPin = 36")
+axis7pinsetLab = Label(
+    tabs["2"], font=("Arial", 8), text="StepPin = 12 / DirPin = 13 / CalPin = 36"
+)
 axis7pinsetLab.place(x=627, y=510)
 
-axis8pinsetLab = Label(tab2, font=("Arial", 8), text="StepPin = 32 / DirPin = 33 / CalPin = 37")
+axis8pinsetLab = Label(
+    tabs["2"], font=("Arial", 8), text="StepPin = 32 / DirPin = 33 / CalPin = 37"
+)
 axis8pinsetLab.place(x=827, y=510)
 
-axis9pinsetLab = Label(tab2, font=("Arial", 8), text="StepPin = 34 / DirPin = 35 / CalPin = 38")
+axis9pinsetLab = Label(
+    tabs["2"], font=("Arial", 8), text="StepPin = 34 / DirPin = 35 / CalPin = 38"
+)
 axis9pinsetLab.place(x=1027, y=510)
 
 
-axis8Lab = Label(tab2, text="8th Axis Calibration")
+axis8Lab = Label(tabs["2"], text="8th Axis Calibration")
 axis8Lab.place(x=865, y=300)
 
-axis8lengthLab = Label(tab2, text="8th Axis Length:")
+axis8lengthLab = Label(tabs["2"], text="8th Axis Length:")
 axis8lengthLab.place(x=851, y=340)
 
-axis8rotLab = Label(tab2, text="MM per Rotation:")
+axis8rotLab = Label(tabs["2"], text="MM per Rotation:")
 axis8rotLab.place(x=845, y=370)
 
-axis8stepsLab = Label(tab2, text="Drive Steps:")
+axis8stepsLab = Label(tabs["2"], text="Drive Steps:")
 axis8stepsLab.place(x=875, y=400)
 
 
-axis9Lab = Label(tab2, text="9th Axis Calibration")
+axis9Lab = Label(tabs["2"], text="9th Axis Calibration")
 axis9Lab.place(x=1065, y=300)
 
-axis9lengthLab = Label(tab2, text="9th Axis Length:")
+axis9lengthLab = Label(tabs["2"], text="9th Axis Length:")
 axis9lengthLab.place(x=1051, y=340)
 
-axis9rotLab = Label(tab2, text="MM per Rotation:")
+axis9rotLab = Label(tabs["2"], text="MM per Rotation:")
 axis9rotLab.place(x=1045, y=370)
 
-axis9stepsLab = Label(tab2, text="Drive Steps:")
+axis9stepsLab = Label(tabs["2"], text="Drive Steps:")
 axis9stepsLab.place(x=1075, y=400)
 
 
-CalibrationOffsetsLab = Label(tab2, text="Calibration Offsets")
+CalibrationOffsetsLab = Label(tabs["2"], text="Calibration Offsets")
 CalibrationOffsetsLab.place(x=485, y=60)
 
-J1calLab = Label(tab2, text="J1 Offset")
+J1calLab = Label(tabs["2"], text="J1 Offset")
 J1calLab.place(x=480, y=90)
 
-J2calLab = Label(tab2, text="J2 Offset")
+J2calLab = Label(tabs["2"], text="J2 Offset")
 J2calLab.place(x=480, y=120)
 
-J3calLab = Label(tab2, text="J3 Offset")
+J3calLab = Label(tabs["2"], text="J3 Offset")
 J3calLab.place(x=480, y=150)
 
-J4calLab = Label(tab2, text="J4 Offset")
+J4calLab = Label(tabs["2"], text="J4 Offset")
 J4calLab.place(x=480, y=180)
 
-J5calLab = Label(tab2, text="J5 Offset")
+J5calLab = Label(tabs["2"], text="J5 Offset")
 J5calLab.place(x=480, y=210)
 
-J6calLab = Label(tab2, text="J6 Offset")
+J6calLab = Label(tabs["2"], text="J6 Offset")
 J6calLab.place(x=480, y=240)
 
-J7calLab = Label(tab2, text="J7 Offset")
+J7calLab = Label(tabs["2"], text="J7 Offset")
 J7calLab.place(x=480, y=280)
 
-J8calLab = Label(tab2, text="J8 Offset")
+J8calLab = Label(tabs["2"], text="J8 Offset")
 J8calLab.place(x=480, y=310)
 
-J9calLab = Label(tab2, text="J9 Offset")
+J9calLab = Label(tabs["2"], text="J9 Offset")
 J9calLab.place(x=480, y=340)
 
 
-CalibrationOffsetsLab = Label(tab2, text="Encoder Control")
+CalibrationOffsetsLab = Label(tabs["2"], text="Encoder Control")
 CalibrationOffsetsLab.place(x=715, y=60)
 
-cmdSentLab = Label(tab2, text="Last Command Sent to Controller")
+cmdSentLab = Label(tabs["2"], text="Last Command Sent to Controller")
 cmdSentLab.place(x=10, y=565)
 
-cmdRecLab = Label(tab2, text="Last Response From Controller")
+cmdRecLab = Label(tabs["2"], text="Last Response From Controller")
 cmdRecLab.place(x=10, y=625)
 
-ToolFrameLab = Label(tab2, text="Theme")
+ToolFrameLab = Label(tabs["2"], text="Theme")
 ToolFrameLab.place(x=1225, y=60)
 
 
 ### 2 BUTTONS################################################################
 #############################################################################
 
-comPortBut = Button(tab2, text="  Set Com Teensy  ", command=setCom)
+comPortBut = Button(tabs["2"], text="  Set Com Teensy  ", command=com.set)
 comPortBut.place(x=85, y=110)
 
-comPortBut2 = Button(tab2, text="Set Com IO Board", command=setCom2)
+comPortBut2 = Button(tabs["2"], text="Set Com IO Board", command=com.set)
 comPortBut2.place(x=85, y=180)
 
 
-lightBut = Button(tab2, text="  Light  ", command=lightTheme)
+lightBut = Button(tabs["2"], text="  Light  ", command=lightTheme)
 lightBut.place(x=1190, y=90)
 
-darkBut = Button(tab2, text="  Dark   ", command=darkTheme)
+darkBut = Button(tabs["2"], text="  Dark   ", command=darkTheme)
 darkBut.place(x=1250, y=90)
 
 
-autoCalBut = Button(tab2, text="  Auto Calibrate  ", command=calRobotAll)
+autoCalBut = Button(tabs["2"], text="  Auto Calibrate  ", command=calRobotAll)
 autoCalBut.place(x=285, y=90)
 
-J1calCbut = Checkbutton(tab2, text="J1", variable=J1CalStat)
-J1calCbut.place(x=285, y=125)
+# NOTE: what makes these calibration check buttons different from other calibration buttons?
+# needs to be more specific.
+cal_pos = {
+    "J1": (dict(x=285, y=125), dict(x=285, y=180)),
+    "J2": (dict(x=320, y=125), dict(x=320, y=180)),
+    "J3": (dict(x=355, y=125), dict(x=355, y=180)),
+    "J4": (dict(x=285, y=145), dict(x=285, y=200)),
+    "J5": (dict(x=320, y=145), dict(x=320, y=200)),
+    "J6": (dict(x=355, y=145), dict(x=355, y=200)),
+}
 
-J2calCbut = Checkbutton(tab2, text="J2", variable=J2CalStat)
-J2calCbut.place(x=320, y=125)
+cal_btns = {}
+for J in JointCTRL.main:
+    btns = [
+        Checkbutton(tabs["2"], text=J.name, variable=J.cal_stat[0]),
+        Checkbutton(tabs["2"], text=J.name, variable=J.cal_stat[1]),
+    ]
+    btns[0].place(**cal_pos[J.name][0])
+    btns[1].place(**cal_pos[J.name][1])
+    cal_btns[J.name] = btns
 
-J3calCbut = Checkbutton(tab2, text="J3", variable=J3CalStat)
-J3calCbut.place(x=355, y=125)
-
-J4calCbut = Checkbutton(tab2, text="J4", variable=J4CalStat)
-J4calCbut.place(x=285, y=145)
-
-J5calCbut = Checkbutton(tab2, text="J5", variable=J5CalStat)
-J5calCbut.place(x=320, y=145)
-
-J6calCbut = Checkbutton(tab2, text="J6", variable=J6CalStat)
-J6calCbut.place(x=355, y=145)
-
-
-J1calCbut2 = Checkbutton(tab2, text="J1", variable=J1CalStat2)
-J1calCbut2.place(x=285, y=180)
-
-J2calCbut2 = Checkbutton(tab2, text="J2", variable=J2CalStat2)
-J2calCbut2.place(x=320, y=180)
-
-J3calCbut2 = Checkbutton(tab2, text="J3", variable=J3CalStat2)
-J3calCbut2.place(x=355, y=180)
-
-J4calCbut2 = Checkbutton(tab2, text="J4", variable=J4CalStat2)
-J4calCbut2.place(x=285, y=200)
-
-J5calCbut2 = Checkbutton(tab2, text="J5", variable=J5CalStat2)
-J5calCbut2.place(x=320, y=200)
-
-J6calCbut2 = Checkbutton(tab2, text="J6", variable=J6CalStat2)
-J6calCbut2.place(x=355, y=200)
-
-
-J7zerobut = Button(tab2, text="Set Axis 7 Calibration to Zero", width=28, command=zeroAxis7)
+J7zerobut = Button(tabs["2"], text="Set Axis 7 Calibration to Zero", width=28, command=zeroAxis7)
 J7zerobut.place(x=627, y=440)
 
-J8zerobut = Button(tab2, text="Set Axis 8 Calibration to Zero", width=28, command=zeroAxis8)
+J8zerobut = Button(tabs["2"], text="Set Axis 8 Calibration to Zero", width=28, command=zeroAxis8)
 J8zerobut.place(x=827, y=440)
 
-J9zerobut = Button(tab2, text="Set Axis 9 Calibration to Zero", width=28, command=zeroAxis9)
+J9zerobut = Button(tabs["2"], text="Set Axis 9 Calibration to Zero", width=28, command=zeroAxis9)
 J9zerobut.place(x=1027, y=440)
 
-J7calbut = Button(tab2, text="Autocalibrate Axis 7", width=28, command=calRobotJ7)
-J7calbut.place(x=627, y=475)
 
-J8calbut = Button(tab2, text="Autocalibrate Axis 8", width=28, command=calRobotJ8)
-J8calbut.place(x=827, y=475)
+autocal_pos = {
+    "J1": dict(x=285, y=240),
+    "J2": dict(x=285, y=270),
+    "J3": dict(x=285, y=300),
+    "J4": dict(x=285, y=330),
+    "J5": dict(x=285, y=360),
+    "J6": dict(x=285, y=390),
+    "J7": dict(x=627, y=475),
+    "J8": dict(x=827, y=475),
+    "J9": dict(x=1027, y=475),
+}
+autocal_btns = {}
+for J in JointCTRL.active:
+    btn = Button(tabs["2"], text=f"Calibrate {J.name} Only", command=lambda: calRobot(J.idx))
+    btn.place(**autocal_pos[J.name])
+    autocal_btns[J.name] = btn
 
-J9calbut = Button(tab2, text="Autocalibrate Axis 9", width=28, command=calRobotJ9)
-J9calbut.place(x=1027, y=475)
 
-
-CalJ1But = Button(tab2, text="Calibrate J1 Only", command=calRobotJ1)
-CalJ1But.place(x=285, y=240)
-
-CalJ2But = Button(tab2, text="Calibrate J2 Only", command=calRobotJ2)
-CalJ2But.place(x=285, y=270)
-
-CalJ3But = Button(tab2, text="Calibrate J3 Only", command=calRobotJ3)
-CalJ3But.place(x=285, y=300)
-
-CalJ4But = Button(tab2, text="Calibrate J4 Only", command=calRobotJ4)
-CalJ4But.place(x=285, y=330)
-
-CalJ5But = Button(tab2, text="Calibrate J5 Only", command=calRobotJ5)
-CalJ5But.place(x=285, y=360)
-
-CalJ6But = Button(tab2, text="Calibrate J6 Only", command=calRobotJ6)
-CalJ6But.place(x=285, y=390)
-
-CalZeroBut = Button(tab2, text="Force Cal. to 0° Home", width=20, command=CalZeroPos)
+CalZeroBut = Button(tabs["2"], text="Force Cal. to 0° Home", width=20, command=CalZeroPos)
 CalZeroBut.place(x=270, y=425)
 
-CalRestBut = Button(tab2, text="Force Cal. to Vert. Rest", width=20, command=CalRestPos)
+CalRestBut = Button(tabs["2"], text="Force Cal. to Vert. Rest", width=20, command=CalRestPos)
 CalRestBut.place(x=270, y=460)
 
-J1OpenLoopCbut = Checkbutton(tab2, text="J1 Open Loop (disable encoder)", variable=J1OpenLoopStat)
+J1OpenLoopCbut = Checkbutton(
+    tabs["2"], text="J1 Open Loop (disable encoder)", variable=J1OpenLoopStat
+)
 J1OpenLoopCbut.place(x=665, y=90)
 
-J2OpenLoopCbut = Checkbutton(tab2, text="J2 Open Loop (disable encoder)", variable=J2OpenLoopStat)
+J2OpenLoopCbut = Checkbutton(
+    tabs["2"], text="J2 Open Loop (disable encoder)", variable=J2OpenLoopStat
+)
 J2OpenLoopCbut.place(x=665, y=110)
 
-J3OpenLoopCbut = Checkbutton(tab2, text="J3 Open Loop (disable encoder)", variable=J3OpenLoopStat)
+J3OpenLoopCbut = Checkbutton(
+    tabs["2"], text="J3 Open Loop (disable encoder)", variable=J3OpenLoopStat
+)
 J3OpenLoopCbut.place(x=665, y=130)
 
-J4OpenLoopCbut = Checkbutton(tab2, text="J4 Open Loop (disable encoder)", variable=J4OpenLoopStat)
+J4OpenLoopCbut = Checkbutton(
+    tabs["2"], text="J4 Open Loop (disable encoder)", variable=J4OpenLoopStat
+)
 J4OpenLoopCbut.place(x=665, y=150)
 
-J5OpenLoopCbut = Checkbutton(tab2, text="J5 Open Loop (disable encoder)", variable=J5OpenLoopStat)
+J5OpenLoopCbut = Checkbutton(
+    tabs["2"], text="J5 Open Loop (disable encoder)", variable=J5OpenLoopStat
+)
 J5OpenLoopCbut.place(x=665, y=170)
 
-J6OpenLoopCbut = Checkbutton(tab2, text="J6 Open Loop (disable encoder)", variable=J6OpenLoopStat)
+J6OpenLoopCbut = Checkbutton(
+    tabs["2"], text="J6 Open Loop (disable encoder)", variable=J6OpenLoopStat
+)
 J6OpenLoopCbut.place(x=665, y=190)
 
-saveCalBut = Button(tab2, text="    SAVE    ", width=26, command=SaveAndApplyCalibration)
+saveCalBut = Button(tabs["2"], text="    SAVE    ", width=26, command=SaveAndApplyCalibration)
 saveCalBut.place(x=1150, y=630)
 
 #### 2 ENTRY FIELDS##########################################################
 #############################################################################
 
 
-comPortEntryField = Entry(tab2, width=4)
+comPortEntryField = Entry(tabs["2"], width=4)
 comPortEntryField.place(x=50, y=114)
 
-com2PortEntryField = Entry(tab2, width=4)
+com2PortEntryField = Entry(tabs["2"], width=4)
 com2PortEntryField.place(x=50, y=184)
 
-cmdSentEntryField = Entry(tab2, width=95)
+cmdSentEntryField = Entry(tabs["2"], width=95)
 cmdSentEntryField.place(x=10, y=585)
 
-cmdRecEntryField = Entry(tab2, width=95)
+cmdRecEntryField = Entry(tabs["2"], width=95)
 cmdRecEntryField.place(x=10, y=645)
 
 
-J1calOffEntryField = Entry(tab2, width=8)
+J1calOffEntryField = Entry(tabs["2"], width=8)
 J1calOffEntryField.place(x=540, y=90)
 
-J2calOffEntryField = Entry(tab2, width=8)
+J2calOffEntryField = Entry(tabs["2"], width=8)
 J2calOffEntryField.place(x=540, y=120)
 
-J3calOffEntryField = Entry(tab2, width=8)
+J3calOffEntryField = Entry(tabs["2"], width=8)
 J3calOffEntryField.place(x=540, y=150)
 
-J4calOffEntryField = Entry(tab2, width=8)
+J4calOffEntryField = Entry(tabs["2"], width=8)
 J4calOffEntryField.place(x=540, y=180)
 
-J5calOffEntryField = Entry(tab2, width=8)
+J5calOffEntryField = Entry(tabs["2"], width=8)
 J5calOffEntryField.place(x=540, y=210)
 
-J6calOffEntryField = Entry(tab2, width=8)
+J6calOffEntryField = Entry(tabs["2"], width=8)
 J6calOffEntryField.place(x=540, y=240)
 
-J7calOffEntryField = Entry(tab2, width=8)
+J7calOffEntryField = Entry(tabs["2"], width=8)
 J7calOffEntryField.place(x=540, y=280)
 
-J8calOffEntryField = Entry(tab2, width=8)
+J8calOffEntryField = Entry(tabs["2"], width=8)
 J8calOffEntryField.place(x=540, y=310)
 
-J9calOffEntryField = Entry(tab2, width=8)
+J9calOffEntryField = Entry(tabs["2"], width=8)
 J9calOffEntryField.place(x=540, y=340)
 
 
-axis7lengthEntryField = Entry(tab2, width=6)
+axis7lengthEntryField = Entry(tabs["2"], width=6)
 axis7lengthEntryField.place(x=750, y=340)
 
-axis7rotEntryField = Entry(tab2, width=6)
+axis7rotEntryField = Entry(tabs["2"], width=6)
 axis7rotEntryField.place(x=750, y=370)
 
-axis7stepsEntryField = Entry(tab2, width=6)
+axis7stepsEntryField = Entry(tabs["2"], width=6)
 axis7stepsEntryField.place(x=750, y=400)
 
-axis8lengthEntryField = Entry(tab2, width=6)
+axis8lengthEntryField = Entry(tabs["2"], width=6)
 axis8lengthEntryField.place(x=950, y=340)
 
-axis8rotEntryField = Entry(tab2, width=6)
+axis8rotEntryField = Entry(tabs["2"], width=6)
 axis8rotEntryField.place(x=950, y=370)
 
-axis8stepsEntryField = Entry(tab2, width=6)
+axis8stepsEntryField = Entry(tabs["2"], width=6)
 axis8stepsEntryField.place(x=950, y=400)
 
-axis9lengthEntryField = Entry(tab2, width=6)
+axis9lengthEntryField = Entry(tabs["2"], width=6)
 axis9lengthEntryField.place(x=1150, y=340)
 
-axis9rotEntryField = Entry(tab2, width=6)
+axis9rotEntryField = Entry(tabs["2"], width=6)
 axis9rotEntryField.place(x=1150, y=370)
 
-axis9stepsEntryField = Entry(tab2, width=6)
+axis9stepsEntryField = Entry(tabs["2"], width=6)
 axis9stepsEntryField.place(x=1150, y=400)
 
 
 ### Tool Frame ###
 
-TFxEntryField = Entry(tab2, width=5)
+TFxEntryField = Entry(tabs["2"], width=5)
 TFxEntryField.place(x=910, y=115)
-TFyEntryField = Entry(tab2, width=5)
+TFyEntryField = Entry(tabs["2"], width=5)
 TFyEntryField.place(x=950, y=115)
-TFzEntryField = Entry(tab2, width=5)
+TFzEntryField = Entry(tabs["2"], width=5)
 TFzEntryField.place(x=990, y=115)
-TFrzEntryField = Entry(tab2, width=5)
+TFrzEntryField = Entry(tabs["2"], width=5)
 TFrzEntryField.place(x=1030, y=115)
-TFryEntryField = Entry(tab2, width=5)
+TFryEntryField = Entry(tabs["2"], width=5)
 TFryEntryField.place(x=1070, y=115)
-TFrxEntryField = Entry(tab2, width=5)
+TFrxEntryField = Entry(tabs["2"], width=5)
 TFrxEntryField.place(x=1110, y=115)
 
 
@@ -2124,11 +2129,11 @@ VisYpixfindEntryField = Entry(tab5, width=5)
 ####################################################################################################################################################
 ####TAB 6
 
-Elogframe = Frame(tab6)
+Elogframe = Frame(tabs["6"])
 Elogframe.place(x=40, y=15)
 scrollbar = Scrollbar(Elogframe)
 scrollbar.pack(side=RIGHT, fill=Y)
-tab6.ElogView = Listbox(Elogframe, width=150, height=40, yscrollcommand=scrollbar.set)
+tabs["6"].ElogView = Listbox(Elogframe, width=150, height=40, yscrollcommand=scrollbar.set)
 try:
     Elog = pickle.load(open("ErrorLog", "rb"))
 except:
@@ -2136,18 +2141,18 @@ except:
     pickle.dump(Elog, open("ErrorLog", "wb"))
 time.sleep(0.2)
 for item in Elog:
-    tab6.ElogView.insert(END, item)
-tab6.ElogView.pack()
-scrollbar.config(command=tab6.ElogView.yview)
+    tabs["6"].ElogView.insert(END, item)
+tabs["6"].ElogView.pack()
+scrollbar.config(command=tabs["6"].ElogView.yview)
 
 
 def clearLog():
-    tab6.ElogView.delete(1, END)
-    value = tab6.ElogView.get(0, END)
+    tabs["6"].ElogView.delete(1, END)
+    value = tabs["6"].ElogView.get(0, END)
     pickle.dump(value, open("ErrorLog", "wb"))
 
 
-clearLogBut = Button(tab6, text="Clear Log", width=26, command=clearLog)
+clearLogBut = Button(tabs["6"], text="Clear Log", width=26, command=clearLog)
 clearLogBut.place(x=1000, y=630)
 
 
@@ -2219,7 +2224,7 @@ testRecEntryField.place(x=10, y=90)
 ### OPEN CAL FILE AND LOAD LIST ##############################################################################################################################
 ##############################################################################################################################################################
 
-calibration = Listbox(tab2, height=60)
+calibration = Listbox(tabs["2"], height=60)
 
 try:
     Cal = pickle.load(open("ARbot.cal", "rb"))
@@ -2480,8 +2485,7 @@ axis9lengthEntryField.insert(0, str(J9length))
 axis9rotEntryField.insert(0, str(J9rotation))
 axis9stepsEntryField.insert(0, str(J9steps))
 
-setCom()
-setCom2()
+com.set()
 
 loadProg()
 updateVisOp()
@@ -2495,7 +2499,7 @@ tkinter.messagebox.showwarning("AR4 License / Copyright notice", msg)
 xboxUse = 0
 
 
-tabs['1'].mainloop()
+tabs["1"].mainloop()
 
 
 # manEntryField.delete(0, 'end')

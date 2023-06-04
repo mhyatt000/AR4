@@ -39,7 +39,7 @@ def cal(command, msg="", joint=None):
     """basic calibrate"""
 
     assert msg or joint
-    msg = f"{joint.name}" of not msg else msg
+    msg = f"{joint.name}" if not msg else msg
     response = serial_write(ser,command)
     handle_response(response, msg)
     log_message(message)
@@ -48,6 +48,7 @@ def cal(command, msg="", joint=None):
 
 def mk_suffix(mode='caloff'):
     """docstring"""
+
     if mode == 'caloff':
         letters = ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R']
         caloff = None
