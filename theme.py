@@ -1,7 +1,12 @@
- 
+import tkinter as tk
+from tkinter import ttk
+
+from ttkthemes import ThemedStyle
 
 theme = 1
-def set_theme(mode="light"):
+
+
+def set_theme(root, mode="light"):
     """sets the theme of the GUI"""
 
     assert mode in ["light", "dark"]
@@ -15,7 +20,7 @@ def set_theme(mode="light"):
 
     font = ("Arial", "10", "bold")
     colors = {
-        "light": ["red", "dark orange" "green", "dark blue", "black"],
+        "light": ["red", "dark orange", "green", "dark blue", "black"],
         "dark": ["IndianRed1", "orange", "light green", "light blue", "white"],
     }
     colors = colors[mode]
@@ -29,10 +34,10 @@ def set_theme(mode="light"):
     style.configure("Frame1.TFrame", background=colors[4])
 
 
-def lightTheme():
-    set_theme(mode="light")
+def lightTheme(root):
+    set_theme(root, mode="light")
 
 
-def darkTheme():
-    set_theme(mode="dark")
-
+def darkTheme(root):
+    lightTheme(root)
+    # set_theme(root, mode="dark")

@@ -927,12 +927,10 @@ def motion(event):
     # print(str(x) +","+str(y))
 
 
-def checkAutoBG():
+def checkAutoBG(autoBG, VisBacColorEntryField):
     autoBGVal = int(autoBG.get())
-    if autoBGVal == 1:
-        VisBacColorEntryField.configure(state="disabled")
-    else:
-        VisBacColorEntryField.configure(state="enabled")
+    state="disabled" if autoBGVal == 1 else "enabled"
+    VisBacColorEntryField.configure(state=state)
 
 
 def testvis():
@@ -1769,13 +1767,13 @@ def visFind(template, min_score, background):
 #      matchesMask = None
 
 
-def updateVisOp():
+def updateVisOp(tabs):
     global selectedTemplate
     selectedTemplate = StringVar()
     folder = os.path.dirname(os.path.realpath(__file__))
     filelist = [fname for fname in os.listdir(folder) if fname.endswith(".jpg")]
     Visoptmenu = ttk.Combobox(
-        tab5, textvariable=selectedTemplate, values=filelist, state="readonly"
+        tabs['5'], textvariable=selectedTemplate, values=filelist, state="readonly"
     )
     Visoptmenu.place(x=390, y=52)
     Visoptmenu.bind("<<ComboboxSelected>>", VisOpUpdate)
@@ -1838,12 +1836,4 @@ def motion(event):
         VisY2PixEntryField.insert(0, y)
 
     # print(str(x) +","+str(y))
-
-
-def checkAutoBG():
-    autoBGVal = int(autoBG.get())
-    if autoBGVal == 1:
-        VisBacColorEntryField.configure(state="disabled")
-    else:
-        VisBacColorEntryField.configure(state="enabled")
 

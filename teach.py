@@ -4,6 +4,7 @@
 
 
 def teachInsertBelSelected():
+
     global XcurPos
     global YcurPos
     global ZcurPos
@@ -12,7 +13,9 @@ def teachInsertBelSelected():
     global RzcurPos
     global WC
     global J7PosCur
+
     checkSpeedVals()
+
     try:
         selRow = tab1.progView.curselection()[0]
         selRow += 1
@@ -20,19 +23,23 @@ def teachInsertBelSelected():
         last = tab1.progView.index("end")
         selRow = last
         tab1.progView.select_set(selRow)
+
     Speed = speedEntryField.get()
     speedtype = speedOption.get()
+
     if speedtype == "Seconds":
         speedPrefix = "Ss"
     if speedtype == "mm per Sec":
         speedPrefix = "Sm"
     if speedtype == "Percent":
         speedPrefix = "Sp"
+
     ACCspd = ACCspeedField.get()
     DECspd = DECspeedField.get()
     ACCramp = ACCrampField.get()
     Rounding = roundEntryField.get()
     movetype = options.get()
+
     if movetype == "OFF J":
         movetype = movetype + " [ PR: " + str(SavePosEntryField.get()) + " ]"
         newPos = (
@@ -68,11 +75,13 @@ def teachInsertBelSelected():
             + " $ "
             + WC
         )
+
         tab1.progView.insert(selRow, newPos)
         tab1.progView.selection_clear(0, END)
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     if movetype == "Move Vis":
         movetype = movetype + " [ PR: " + str(SavePosEntryField.get()) + " ]"
         newPos = (
@@ -108,11 +117,13 @@ def teachInsertBelSelected():
             + " $ "
             + WC
         )
+
         tab1.progView.insert(selRow, newPos)
         tab1.progView.selection_clear(0, END)
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move PR":
         movetype = movetype + " [ PR: " + str(SavePosEntryField.get()) + " ]"
         newPos = (
@@ -137,11 +148,13 @@ def teachInsertBelSelected():
             + " $ "
             + WC
         )
+
         tab1.progView.insert(selRow, newPos)
         tab1.progView.selection_clear(0, END)
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "OFF PR ":
         movetype = (
             movetype
@@ -151,6 +164,7 @@ def teachInsertBelSelected():
             + str(int(SavePosEntryField.get()) + 1)
             + " ] "
         )
+
         newPos = (
             movetype
             + " [*]"
@@ -173,11 +187,13 @@ def teachInsertBelSelected():
             + " $ "
             + WC
         )
+
         tab1.progView.insert(selRow, newPos)
         tab1.progView.selection_clear(0, END)
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move J":
         newPos = (
             movetype
@@ -217,6 +233,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move L":
         newPos = (
             movetype
@@ -258,6 +275,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move R":
         newPos = (
             movetype
@@ -297,6 +315,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move A Mid":
         newPos = (
             movetype
@@ -336,6 +355,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move A End":
         newPos = (
             movetype
@@ -375,6 +395,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move C Center":
         newPos = (
             movetype
@@ -414,6 +435,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move C Start":
         newPos = movetype + " [*] X " + XcurPos + " Y " + YcurPos + " Z " + ZcurPos
         tab1.progView.insert(selRow, newPos)
@@ -421,6 +443,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Move C Plane":
         newPos = movetype + " [*] X " + XcurPos + " Y " + YcurPos + " Z " + ZcurPos
         tab1.progView.insert(selRow, newPos)
@@ -428,6 +451,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Start Spline" or movetype == "End Spline":
         newPos = movetype
         tab1.progView.insert(selRow, newPos)
@@ -435,6 +459,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
         value = tab1.progView.get(0, END)
         pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
     elif movetype == "Teach PR":
         PR = str(SavePosEntryField.get())
         SPE6 = "Position Register " + PR + " Element 6 = " + RxcurPos
@@ -458,9 +483,11 @@ def teachReplaceSelected():
         deleteitem()
         selRow = tab1.progView.curselection()[0]
         tab1.progView.select_set(selRow - 1)
+
     except:
         last = tab1.progView.index("end")
         selRow = last
         tab1.progView.select_set(selRow)
     teachInsertBelSelected()
+
 

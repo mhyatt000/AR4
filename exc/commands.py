@@ -1,8 +1,8 @@
 def prog_entry():
     """docstring"""
 
-    ProgEntryField.delete(0, "end")
-    ProgEntryField.insert(0, progNum)
+    EntryField.active['prog'].delete(0, "end")
+    EntryField.active['prog'].insert(0, progNum)
     loadProg()
     time.sleep(0.4)
     index = 0
@@ -16,7 +16,7 @@ def call_p():
     if moveInProc == 1:
         moveInProc == 2
     tab1.lastRow = tab1.progView.curselection()[0]
-    tab1.lastProg = ProgEntryField.get()
+    tab1.lastProg = EntryField.active['prog'].get()
     programIndex = command.find("Program -")
     progNum = str(command[programIndex + 10 :])
     prog_entry()
