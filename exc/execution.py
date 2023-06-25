@@ -1,4 +1,5 @@
 from exc import commands 
+from gui.base import EntryField
 
 def runProg():
 
@@ -150,20 +151,6 @@ def executeRow():
     if cmdType == "Return":
         commands.return_prog()
 
-    ##Test Limit Switches
-    if cmdType == "Test L":
-        if moveInProc == 1:
-            moveInProc == 2
-        command = "TL\n"
-        cmdSentEntryField.delete(0, "end")
-        cmdSentEntryField.insert(0, command)
-        ser.write(command.encode())
-        ser.flushInput()
-        time.sleep(0.05)
-        response = str(ser.readline().strip(), "utf-8")
-        manEntryField.delete(0, "end")
-        manEntryField.insert(0, response)
-
     ##Set Encoders 1000
     if cmdType == "Set En":
         if moveInProc == 1:
@@ -179,17 +166,12 @@ def executeRow():
 
     ##Read Encoders
     if cmdType == "Read E":
-        if moveInProc == 1:
-            moveInProc == 2
-        command = "RE\n"
-        cmdSentEntryField.delete(0, "end")
-        cmdSentEntryField.insert(0, command)
-        ser.write(command.encode())
-        ser.flushInput()
-        time.sleep(0.05)
-        response = str(ser.readline().strip(), "utf-8")
-        manEntryField.delete(0, "end")
-        manEntryField.insert(0, response)
+        read_encoders()
+
+    ##Test Limit Switches
+    if cmdType == "Test L":
+        test_limit_switch()
+
 
     ##Servo Command##
     if cmdType == "Servo ":
@@ -637,9 +619,9 @@ def executeRow():
         # ser.read()
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Offs J Command##
     if cmdType == "OFF J ":
@@ -732,9 +714,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Move Vis Command##
     if cmdType == "Move V":
@@ -830,9 +812,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Move PR Command##
     if cmdType == "Move P":
@@ -919,9 +901,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##OFFS PR Command##
     if cmdType == "OFF PR":
@@ -1023,9 +1005,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Move L Command##
     if cmdType == "Move L":
@@ -1115,9 +1097,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Move R Command##
     if cmdType == "Move R":
@@ -1201,9 +1183,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Move A Command##
     if cmdType == "Move A":
@@ -1351,9 +1333,9 @@ def executeRow():
             time.sleep(0.2)
             response = str(ser.readline().strip(), "utf-8")
             if response[:1] == "E":
-                ErrorHandler(response)
+                handle_error(response)
             else:
-                displayPosition(response)
+                display_position(response)
 
     ##Move C Command##
     if cmdType == "Move C":
@@ -1548,9 +1530,9 @@ def executeRow():
             time.sleep(0.1)
             response = str(ser.readline().strip(), "utf-8")
             if response[:1] == "E":
-                ErrorHandler(response)
+                handle_error(response)
             else:
-                displayPosition(response)
+                display_position(response)
 
     ##Start Spline
     if cmdType == "Start ":
@@ -1581,9 +1563,9 @@ def executeRow():
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
         if response[:1] == "E":
-            ErrorHandler(response)
+            handle_error(response)
         else:
-            displayPosition(response)
+            display_position(response)
 
     ##Camera On
     if cmdType == "Cam On":

@@ -1,7 +1,13 @@
-from com import COM
 import calibrate
+from gui.base import EntryField
+from com import COM
+from gui.base import GUI
 from joint import JointCTRL
 
+# TODO this should totally go in util.py
+def record_command(command):
+    EntryField.active['cmd_sent'].entry.delete(0, "end")
+    EntryField.active['cmd_sent'].entry.insert(0, command)
 
 def modify_speed(entry_field, val):
     cur_spd = int(entry_field.get())
@@ -29,15 +35,17 @@ def ChgSpd(val):
 def serial_err_handle(response):
     """docstring"""
 
-    response = serial_write(command)
     if response[:1] == "E":
-        ErrorHandler(response)
+        print('handle')
+        handle_error(response)
     else:
-        displayPosition(response)
+        print('display pos')
+        calibrate.display_position(response)
 
 
 def get_loopmode():
-    return sum(map(lambda x: str(x.openloop_stat.get()), JointCTRL.active))
+    return "".join([str(x.open_loop.get()) for x in  JointCTRL.active])
+
 
 
 def joint_jog(joint, value):
@@ -46,121 +54,103 @@ def joint_jog(joint, value):
     joints = JointCTRL.active
     angles = [J.angle for J in joints]
 
-    calibrate.check_speed()
 
-    xboxuse = None
-    if xboxUse != 1:
-        almStatusLab.config(text="SYSTEM READY", style="OK.TLabel")
-        almStatusLab2.config(text="SYSTEM READY", style="OK.TLabel")
-    if xboxUse != 1:
-        for alm in COM.alms:
-            alm.config(text="SYSTEM READY", style="OK.TLabel")
+    if not GUI.use_xbox:
+        COM.alarm("SYSTEM READY", False)
 
-    # TODO is this redundant code?? 
+    # TODO is this redundant code??
     # see calibrate.check_speed()
-    """
-    speedtype = speedOption.get()
-    speedPrefix = {"Seconds": "Ss", "Percent": "Sp"}.get(speedtype, None)
 
-    if speedtype == "mm per Sec":
-        OptionMenu(tab1, speedOption, "Percent", "Percent", "Seconds", "mm per Sec")
-        speedPrefix = "Sp"
+    calibrate.check_speed()
+    speed_type = GUI.speed_option.get()
+    speed_prefix = {"Seconds": "Ss", "Percent": "Sp"}.get(speed_type, None)
+
+    if speed_type == "mm per Sec":
+        OptionMenu(tab1, speed_option, "Percent", "Percent", "Seconds", "mm per Sec")
+        speed_prefix = "Sp"
         speedEntryField.delete(0, "end")
         speedEntryField.insert(0, "50")
-    """
 
-    fields = [speedEntryField, ACCspeedField, DECspeedField, ACCrampField]
-    Speed, ACCspd, DECspd, ACCramp = map(lambda x: x.get(), fields)
+    fields = [
+        EntryField.active["speed"],
+        EntryField.active["ACCspeed"],
+        EntryField.active["DECspeed"],
+        EntryField.active["ACCramp"],
+    ]
+    Speed, ACCspd, DECspd, ACCramp = map(lambda x: x.entry.get(), fields)
 
     loopmode = get_loopmode()
 
-    chars = ['A','B','C','D','E','F','J7','J8','J9']
+    chars = ["A", "B", "C", "D", "E", "F", "J7", "J8", "J9"]
     angles[joint] += value
 
-    prefix = 'RJ'
-    direction = ''.join([f'{a}{b}' for a,b in zip(chars,angles)])
-    suffix = f"{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{LoopMode}\n"
+    prefix = "RJ"
+    direction = "".join([f"{a}{b}" for a, b in zip(chars, angles)])
+    WC = "F" if float(JointCTRL.active[4].angle) > 0 else "N"
+    suffix = f"{speed_prefix }{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{loopmode}\n"
 
     command = prefix + direction + suffix
-    cmdSentEntryField.delete(0, "end")
-    cmdSentEntryField.insert(0, command)
+    # TODO add in
+    record_command(command)
 
-    response = serial_write(command)
+    response = COM.serial_write(command)
+    print(response)
     serial_err_handle(response)
 
 
 def LiveJointJog(value):
-    command = f"LJV{value}{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{LoopMode}\n"
+    command = f"LJV{value}{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{loopmode}\n"
     return command
 
 
-def LiveCarJog(value):
-    command = f"LCV{value}{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{LoopMode}\n"
+def live_car_jog(value):
+    command = f"LCV{value}{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{loopmode}\n"
     return command
 
 
 def LiveToolJog(value):
-    command = f"LTV{value}{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{LoopMode}\n"
+    command = f"LTV{value}{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{loopmode}\n"
     return command
 
 
 def stop_jog():
     command = "S\n"
-    IncJogStatVal = int(IncJogStat.get())
-    if IncJogStatVal == 0:
-        response = serial_write(command)
+    is_increment = int(GUI.is_increment.get())
+    if not is_increment:
+        response = COM.serial_write(command)
         serial_err_handle(response)
 
 
-def jog_position(value, axis):
+def car_jog(value, axis):
+    """cartesian jog"""
     """instead of jogging a joint, jog in x,y,z"""
 
     checkSpeedVals()
 
-    xboxUse = None
-    if xboxUse != 1:
-        almStatusLab.config(text="SYSTEM READY", style="OK.TLabel")
-        almStatusLab2.config(text="SYSTEM READY", style="OK.TLabel")
+    if not GUI.use_xbox:
+        COM.alarm("SYSTEM READY", False)
 
-    speedtype = speedOption.get()
+    speedtype = speed_option.get()
     options = {"mm per Sec": "Sm", "Seconds": "Ss", "Percent": "Sp"}
     speedPrefix = options.get(speedtype)
 
     fields = [speedEntryField, ACCspeedField, DECspeedField, ACCrampField]
     Speed, ACCspd, DECspd, ACCramp = map(lambda x: x.get(), fields)
 
-    xVal = XcurPos
-    yVal = YcurPos
-    zVal = ZcurPos
-    rzVal = RzcurPos
-    ryVal = RycurPos
-    rxVal = RxcurPos
+    positions = {k:A.position for A in Axisframe.active.items()}
+    positions[axis] += value
 
-    position_updates = {
-        "x": lambda: xVal + value,
-        "y": lambda: yVal + value,
-        "z": lambda: zVal + value,
-        "rx": lambda: rxVal + value,
-        "ry": lambda: ryVal + value,
-        "rz": lambda: rzVal + value,
-    }
-
-    update_position = position_updates.get(axis)
-    if update_position:
-        xVal = update_position()
-
-    j7Val = str(J7PosCur)
-    j8Val = str(J8PosCur)
-    j9Val = str(J9PosCur)
+    j7,j8,j9 = [J.position for J in JointCTRL.external]
 
     loopmode = get_loopmode()
 
     command = (
-        f"MJX{xVal}Y{yVal}Z{zVal}Rz{rzVal}Ry{ryVal}Rx{rxVal}J7{j7Val}J8{j8Val}J9{j9Val}"
+        f"MJX{pos['x']}Y{pos['y']}Z{pos['z']}Rz{pos['rx']}Ry{pos['ry']}Rx{pos['rz']}"+
+        f'J7{j7}J8{j8}J9{j9}'
         f"{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{loopmode}\n"
     )
 
-    response = serial_write(command)
+    response = COM.serial_write(command)
     serial_err_handle(response)
 
 
@@ -169,12 +159,10 @@ def tjog_position(value, axis):
 
     checkSpeedVals()
 
-    xboxUse = None
-    if xboxUse != 1:
-        almStatusLab.config(text="SYSTEM READY", style="OK.TLabel")
-        almStatusLab2.config(text="SYSTEM READY", style="OK.TLabel")
+    if not GUI.use_xbox:
+        COM.alarm("SYSTEM READY", False)
 
-    speedtype = speedOption.get()
+    speedtype = speed_option.get()
     options = {"mm per Sec": "Sm", "Seconds": "Ss", "Percent": "Sp"}
     speedPrefix = options.get(speedtype)
 
