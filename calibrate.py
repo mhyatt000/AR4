@@ -1,28 +1,32 @@
-""" NOTE
-dont use black yet... 
-the command expands 20+ lines
-"""
-
+import datetime
+from pprint import pprint
+from servo import Servo, DO
 import pickle
 from pprint import pprint
 import tkinter as tk
 
 from com import COM
-from frames import (GUI, AxisFrame,  # make so its the same pattern as joint
-                    EntryField)
+from frames import AxisFrame  , ToolFrame # make so its the same pattern as joint
+from gui.base import GUI, EntryField
 from joint import JointCTRL
+
+
+def stopProg():
+    """see exc/execution.py 110"""
+    pass
 
 
 def log_message(msg):
     """docstring"""
 
+    print(msg)
     now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
-    tab6.ElogView.insert(tk.END, f"{now} - {msg}")
-    value = tab6.ElogView.get(0, tk.END)
+    GUI.tabs["6"].ElogView.insert(tk.END, f"{now} - {msg}")
+    value = GUI.tabs["6"].ElogView.get(0, tk.END)
     pickle.dump(value, open("ErrorLog", "wb"))
 
 
-def handle_response2(response, msg):
+def handle_response2(response, message):
     """another way to handle a response
     maybe try case switch with other file?
     """
@@ -32,15 +36,14 @@ def handle_response2(response, msg):
         pass
 
     if response[:1] == "A":
-        displayPosition(response)
+        display_position(response)
         msg = "Calibration Successful"
         style = "OK.TLabel"
     else:
         msg = "Calibration Failed"
         style = "Alarm.TLabel"
 
-    almStatusLab.config(text=msg, style=style)
-    almStatusLab2.config(text=msg, style=style)
+    COM.alarm(message)
     return msg
 
 
@@ -50,34 +53,38 @@ def cal(command, msg="", joint=None):
     assert msg or joint
     msg = f"{joint.name}" if not msg else msg
     response = COM.serial_write(command)
-    handle_response(response, msg)
-    log_message(message)
+    handle_response2(response, msg)
+    log_message(msg)
 
 
 def mk_suffix(mode="caloff"):
     """docstring"""
 
+    # TODO make some kind of check to see if the command is valid
+    # before sending to teensy
+
     if mode == "caloff":
         letters = ["J", "K", "L", "M", "N", "O", "P", "Q", "R"]
-        caloff = None
-        suffix = sum([sum(a, b) for a, b in zip(letters, caloff)])
+        caloffs = [J.no_calibrate.get() for J in JointCTRL.active]
+        suffix = ''.join([f'{a}{b}' for a, b in zip(letters, caloffs)])
     return suffix
 
 
 def calRobotAll():
 
     ##### STAGE 1 ########
-    joints = [None] * 6
-    caloff = [x.caloff for x in joints]
+    caloffs = [J.no_calibrate.get() for J in JointCTRL.main]
+    calstat = caloffs
 
-    calstat = [x.calstat for x in joints]
-    command = f"LLA{J1CalStatVal}B{J2CalStatVal}C{J3CalStatVal}D{J4CalStatVal}E{J5CalStatVal}F{J6CalStatVal}G0H0I0{mk_suffix(mode='caloff')}\n"
+    command = f"LLA{caloffs[0]}B{caloffs[1]}C{caloffs[2]}D{caloffs[3]}E{caloffs[4]}F{caloffs[5]}G0H0I0{mk_suffix(mode='caloff')}\n"
 
     msg = "Stage 1 Auto"
     cal(command, msg)
 
     ##### STAGE 2 ########
-    calstat2 = [x.calstat2 for x in joints]
+    # NOTE maybe this is the other direction??
+    caloffs = [J.no_calibrate2.get() for J in JointCTRL.main]
+    calstat2 = caloffs
     if CalStatVal2 > 0:
 
         command = f"LLA{J1CalStatVal2}B{J2CalStatVal2}C{J3CalStatVal2}D{J4CalStatVal2}E{J5CalStatVal2}F{J6CalStatVal2}G0H0I0{mk_suffix(mode='caloff')}\n"
@@ -88,6 +95,9 @@ def calRobotAll():
 
 def calRobot(idx):
     """docstring"""
+
+    print(idx)
+    quit()
 
     assert idx in list(range(9))
     commands = [
@@ -103,7 +113,7 @@ def calRobot(idx):
     ]
     suffix = mk_suffix(mode="caloff")
     command = commands[idx] + suffix
-    cal(command, joint=idx + 1)
+    cal(command, joint=JointCTRL.active[idx] )
 
 
 def calRobotMid():
@@ -114,33 +124,23 @@ def calRobotMid():
 def correctPos():
     command = "CP\n"
     response = COM.serial_write(command)
-    displayPosition(response)
+    display_position(response)
 
 
-def requestPos():
+def request_pos():
     command = "RP\n"
     response = COM.serial_write(command)
-    print("response")
-    print(response)
-    displayPosition(response)
+    display_position(response)
 
 
-def toolFrame(
-    TFxEntryField,
-    TFyEntryField,
-    TFzEntryField,
-    TFrzEntryField,
-    TFryEntryField,
-    TFrxEntryField,
-):
+def tool_frame():
+    """what does this do"""
 
-    TFx = TFxEntryField.get()
-    TFy = TFyEntryField.get()
-    TFz = TFzEntryField.get()
-    TFrz = TFrzEntryField.get()
-    TFry = TFryEntryField.get()
-    TFrx = TFrxEntryField.get()
-    command = "TF" + "A" + TFx + "B" + TFy + "C" + TFz + "D" + TFrz + "E" + TFry + "F" + TFrx + "\n"
+    chars = ["A", "B", "C", "D", "E", "F"]
+    TF = {k:v.entry.get() for k,v in ToolFrame.active.items()}
+
+    command = "".join([f'{a}{b}' for a,b in zip(chars,TF.values())])
+    command = f"TF{command}\n"
     response = COM.serial_write(command)
 
 
@@ -178,10 +178,10 @@ def zero(joint, command):
     log_message(message)
 
     # TODO: feel like this should have been above
-    value = tab6.ElogView.get(0, tk.END)
+    value = GUI.tabs["6"].ElogView.get(0, tk.END)
     pickle.dump(value, open("ErrorLog", "wb"))
     response = str(ser.readline().strip(), "utf-8")
-    displayPosition(response)
+    display_position(response)
 
 
 def zeroAxis7():
@@ -199,11 +199,7 @@ def zeroAxis9():
     zero("J9", command)
 
 
-def sendPos():
-
-    j = JointCTRL.main[0]
-
-    print(j.__dict__)
+def send_pos():
 
     angles = [J.angle for J in JointCTRL.active]
     letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
@@ -215,7 +211,7 @@ def sendPos():
 def CalZeroPos():
     command = "SPA0B0C0D0E0F0\n"
     response = COM.serial_write(command)
-    requestPos()
+    request_pos()
     almStatusLab.config(text="Calibration Forced to Zero", style="Warn.TLabel")
     almStatusLab2.config(text="Calibration Forced to Zero", style="Warn.TLabel")
     message = "Calibration Forced to Zero - this is for commissioning and testing - be careful!"
@@ -225,7 +221,7 @@ def CalZeroPos():
 def CalRestPos():
     command = "SPA0B0C-89D0E0F0\n"
     response = COM.serial_write(command)
-    requestPos()
+    request_pos()
     COM.alarm("Calibration Forced to Vertical Rest Pos")
     message = "Calibration Forced to Vertical - this is for commissioning and testing - be careful!"
     log_message(message)
@@ -234,122 +230,91 @@ def CalRestPos():
 def ResetDrives():
     command = "RD" + "\n"
     response = COM.serial_write(command)
-    COM.alarm( "DRIVES RESET - PLEASE CHECK CALIBRATION")
-    requestPos()
+    COM.alarm("DRIVES RESET - PLEASE CHECK CALIBRATION")
+    request_pos()
 
 
-def displayPosition(response):
+def display_position(response):
+    """displays positional into"""
 
     # TODO
     # cmdRecEntryField.delete(0, "end")
     # cmdRecEntryField.insert(0, response)
 
-    J1AngIndex = response.find("A")
-    J2AngIndex = response.find("B")
-    J3AngIndex = response.find("C")
-    J4AngIndex = response.find("D")
-    J5AngIndex = response.find("E")
-    J6AngIndex = response.find("F")
-    XposIndex = response.find("G")
-    YposIndex = response.find("H")
-    ZposIndex = response.find("I")
-    RzposIndex = response.find("J")
-    RyposIndex = response.find("K")
-    RxposIndex = response.find("L")
-    SpeedVioIndex = response.find("M")
-    DebugIndex = response.find("N")
-    FlagIndex = response.find("O")
-    J7PosIndex = response.find("P")
-    J8PosIndex = response.find("Q")
-    J9PosIndex = response.find("R")
-
-    joint_idxs = [
-        J1AngIndex,
-        J2AngIndex,
-        J3AngIndex,
-        J4AngIndex,
-        J5AngIndex,
-        J6AngIndex,
-    ]
-    for J, idx in zip(JointCTRL.main,joint_idxs):
-        raise Exception('TODO right now')
-
-
-    J1AngCur = response[J1AngIndex + 1 : J2AngIndex].strip()
-    J2AngCur = response[J2AngIndex + 1 : J3AngIndex].strip()
-    J3AngCur = response[J3AngIndex + 1 : J4AngIndex].strip()
-    J4AngCur = response[J4AngIndex + 1 : J5AngIndex].strip()
-    J5AngCur = response[J5AngIndex + 1 : J6AngIndex].strip()
-    J6AngCur = response[J6AngIndex + 1 : XposIndex].strip()
-
-    WC = "F" if float(J5AngCur) > 0 else "N"
-
-    XcurPos = response[XposIndex + 1 : YposIndex].strip()
-    YcurPos = response[YposIndex + 1 : ZposIndex].strip()
-    ZcurPos = response[ZposIndex + 1 : RzposIndex].strip()
-    RzcurPos = response[RzposIndex + 1 : RyposIndex].strip()
-    RycurPos = response[RyposIndex + 1 : RxposIndex].strip()
-    RxcurPos = response[RxposIndex + 1 : SpeedVioIndex].strip()
-    SpeedVioation = response[SpeedVioIndex + 1 : DebugIndex].strip()
-    Debug = response[DebugIndex + 1 : FlagIndex].strip()
-    Flag = response[FlagIndex + 1 : J7PosIndex].strip()
-
-    J7PosCur = float(response[J7PosIndex + 1 : J8PosIndex].strip())
-    J8PosCur = float(response[J8PosIndex + 1 : J9PosIndex].strip())
-    J9PosCur = float(response[J9PosIndex + 1 :].strip())
-
-    # TODO
-    # TODO abstract with display.py
-
-    Frames = [J.gui for J in JointCTRL.main]
-
-    join_angles = [
-        J1AngCur,
-        J2AngCur,
-        J3AngCur,
-        J4AngCur,
-        J5AngCur,
-        J6AngCur,
-        J7PosCur,
-        J8PosCur,
-        J9PosCur,
-    ]
-
-    # current angle or current position
-
-    for F, val in zip(Frames, join_angles):
-        F.label(val)
-        F.slider.set(val)
-
-    axispos = {
-        "x": None,
-        "y": None,
-        "z": None,
+    responses = {
+        "J1": "A",
+        "J2": "B",
+        "J3": "C",
+        "J4": "D",
+        "J5": "E",
+        "J6": "F",
         #
-        "rx": None,
-        "ry": None,
-        "rz": None,
+        "x": "G",
+        "y": "H",
+        "z": "I",
+        "rz": "J",
+        "ry": "K",
+        "rx": "L",
+        #
+        "speed_vio": "M",
+        "debug": "N",
+        "flag": "O",
+        #
+        "J7": "P",
+        "J8": "Q",
+        "J9": "R",
     }
 
-    for k, A in AxisFrame.active.items():
-        A.label(axispos[k])
 
-    print("calibrate.py")
-    print(EntryField)
-    EntryField.active["man"].label(Debug)  # what is man ... what is debug
+    idxs = [response.find(v) for k, v in responses.items()]
+    a = idxs.pop(0)
+    for i, (k, v) in enumerate(responses.items()):
+        # get next index or all the way to the end
+        b = idxs.pop(0) if len(idxs) else 2 * len(responses.keys())
+        responses[k] = response[a + 1 : b].strip()
+        a = b
 
-    savePosData()
+    Frames = [J.gui for J in JointCTRL.active]
 
-    if Flag != "":
-        ErrorHandler(Flag)
-    if SpeedVioation == "1":
+    # NOTE J9 is '' because there is no 9th driver in the control box
+    angles = [float(v if v != "" else 0.0) for k, v in responses.items() if "J" in k]
+    for F, J, a in zip(Frames, JointCTRL.active, angles):
+        J.angle = a
+
+        F.label(a)
+        F.slider.set(a)
+
+    for k, A in AxisFrame.main.items():
+        pos = responses[k]
+        A.position = pos
+        A.label(pos)
+
+    # NOTE used in other files
+    WC = "F" if float(JointCTRL.active[4].angle) > 0 else "N"
+
+    # what is man ... what is debug
+    speed_vio = responses["speed_vio"]
+    debug = responses["debug"]
+    flag = responses["flag"]
+
+    EntryField.active["man"].label(debug)
+
+    pprint(responses)
+
+    save_pos_data()
+
+    if flag != "":
+        print(f'flag: {flag}')
+        print(f'len flag: {len(flag)}')
+        handle_error(flag)
+
+    if speed_vio == "1":
         Curtime = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
         message = "Max Speed Violation - Reduce Speed Setpoint or Travel Distance"
-        tab6.ElogView.insert(tk.END, Curtime + " - " + message)
-        value = tab6.ElogView.get(0, tk.END)
+        GUI.tabs["6"].ElogView.insert(tk.END, Curtime + " - " + message)
+        value = GUI.tabs["6"].ElogView.get(0, tk.END)
         pickle.dump(value, open("ErrorLog", "wb"))
-        almStatusLab.config(text=message, style="Warn.TLabel")
-        almStatusLab2.config(text=message, style="Warn.TLabel")
+        COM.alarm(message)
 
 
 def SaveAndApplyCalibration():
@@ -484,10 +449,10 @@ def SaveAndApplyCalibration():
         calExtAxis()
     except:
         print("no serial connection with Teensy board")
-    savePosData()
+    save_pos_data()
 
 
-def savePosData():
+def save_pos_data():
 
     # i think angular current
     ang_cur = [None] * 6
@@ -495,41 +460,26 @@ def savePosData():
     GUI.calibration.delete(0, tk.END)
 
     # TODO: clean
+    # TODO finish now!
     toinsert = [
-        J1AngCur,
-        J2AngCur,
-        J3AngCur,
-        J4AngCur,
-        J5AngCur,
-        J6AngCur,
-        XcurPos,
-        YcurPos,
-        ZcurPos,
-        RzcurPos,
-        RycurPos,
-        RxcurPos,
+        *[J.angle for J in JointCTRL.main],
+        *[A.position for A in AxisFrame.main.values()],
         #
-        GUI.comPortEntryField.get(),
+        COM.teensy.entry.get(),
         EntryField.active["prog"].entry.get(),
-        servo0onEntryField.get(),
-        servo0offEntryField.get(),
-        servo1onEntryField.get(),
-        servo1offEntryField.get(),
-        DO1onEntryField.get(),
-        DO1offEntryField.get(),
-        DO2onEntryField.get(),
-        DO2offEntryField.get(),
         #
-        TFxEntryField.get(),
-        TFyEntryField.get(),
-        TFzEntryField.get(),
-        TFrxEntryField.get(),
-        TFryEntryField.get(),
-        TFrzEntryField.get(),
+        Servo.active[0].on.entry.get(),
+        Servo.active[0].off.entry.get(),
+        Servo.active[1].on.entry.get(),
+        Servo.active[1].off.entry.get(),
         #
-        J7curAngEntryField.get(),
-        J8curAngEntryField.get(),
-        J9curAngEntryField.get(),
+        DO.active[0].on.entry.get(),
+        DO.active[0].off.entry.get(),
+        DO.active[1].on.entry.get(),
+        DO.active[1].off.entry.get(),
+        #
+        *[x.entry.get() for x in ToolFrame.active.values()],
+        *[J.gui.entry.get() for J in JointCTRL.external],
         VisFileLocEntryField.get(),
         visoptions.get(),
         #
@@ -593,7 +543,7 @@ def savePosData():
         pick180.get(),
         pickClosest.get(),
         visoptions.get(),
-        fullRot.get(),
+        GUI.full_rot.get(),
         autoBG.get(),
         mX1,
         mY1,
@@ -610,11 +560,14 @@ def savePosData():
         J9calOffEntryField.get(),
     ]
 
+    # TODO why make variables to save in calibrate only to read them again?
+    # is it because of pickle maybe?
     for item in toinsert:
         GUI.calibration.insert(tk.END, item)
 
     value = GUI.calibration.get(0, tk.END)
-    pickle.dump(value, open("ARbot.cal", "wb"))
+    # save to file for the next time it is opened
+    pickle.dump(value, open("ErrorLog", "wb"))
 
 
 class SpeedValidator:
@@ -622,9 +575,10 @@ class SpeedValidator:
 
     default_values = {"mm per Sec": "5", "Seconds": "1", "Percent": "10"}
 
-    def __init__(self, speed_option,entry):
+    def __init__(self, speed_option, entry):
         self.speed_option = speed_option
-        self.entry=entry
+        # TODO this needs clean up
+        self.entry = entry.entry
 
     def validate(self):
         speed_type = self.speed_option.get()
@@ -649,7 +603,7 @@ class FieldValidator:
     default_value = "10"
 
     def __init__(self, entry):
-        self.entry = entry
+        self.entry = entry.entry
 
     def validate(self):
         value = float(self.entry.get())
@@ -661,50 +615,51 @@ class FieldValidator:
         self.entry.insert(0, self.default_value)
 
 
-def check_speeds():
-    speed_validator = SpeedValidator(speedOption, speedEntryField)
+def check_speed():
+    speed_validator = SpeedValidator(GUI.speed_option, EntryField.active["speed"])
     speed_validator.validate()
 
-    ACCspd_validator = FieldValidator(ACCspeedField)
+    ACCspd_validator = FieldValidator(EntryField.active["ACCspeed"])  # TODO rename
     ACCspd_validator.validate()
 
-    DECspd_validator = FieldValidator(DECspeedField)
+    DECspd_validator = FieldValidator(EntryField.active["DECspeed"])
     DECspd_validator.validate()
 
-    ACCramp_validator = FieldValidator(ACCrampField)
+    ACCramp_validator = FieldValidator(EntryField.active["ACCramp"])
     ACCramp_validator.validate()
 
 
-def ErrorHandler(response):
+def handle_error(response):
+
     # TODO: are these 2 lines needed?
-    cmdRecEntryField.delete(0, "end")
-    cmdRecEntryField.insert(0, response)
+    # TODO yes ... but okay to remove for now.
+    def record_response(response):
+        EntryField.active["cmd_rec"].entry.delete(0, "end")
+        EntryField.active["cmd_rec"].entry.insert(0, response)
+
+    record_response(response)
 
     ##AXIS LIMIT ERROR
     if response[1:2] == "L":
 
         for i, j in enumerate(joints):
             if response[i + 2 : i + 3] == "1":
-                send_msg("{j.name} Axis Limit")
+                log_message("{j.name} Axis Limit")
 
-        cmdRecEntryField.delete(0, "end")
-        cmdRecEntryField.insert(0, response)
         message = "Axis Limit Error - See Log"
-        almStatusLab.config(text=message, style="Alarm.TLabel")
-        almStatusLab2.config(text=message, style="Alarm.TLabel")
-        # stopProg() # NOTE: creator commented out
+        COM.alarm(message)
+        stopProg()
 
     ##COLLISION ERROR
     elif response[1:2] == "C":
 
-        for i, j in enumerate(joints[:6]):
+        for i, J in enumerate(JointCTRL.main):
             if response[i + 2 : i + 3] == "1":
-                send_msg("{j.name} Collision or Motor Error")
+                log_message(f"{J.name} Collision or Motor Error")
                 correctPos()
                 stopProg()
                 message = "Collision or Motor Error - See Log"
-                almStatusLab.config(text=message, style="Alarm.TLabel")
-                almStatusLab2.config(text=message, style="Alarm.TLabel")
+                COM.alarm(message)
 
     ##REACH ERROR
     else:

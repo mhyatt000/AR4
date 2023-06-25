@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
+from gui.base import GUI
 from jog import jog_cmd
 from joint import JointCTRL
 
@@ -69,11 +70,13 @@ class JointFrame:
             "pos": button("+"),
         }
         for col, (k, button) in zip([1, 3], self.buttons.items()):
-            button.bind("<ButtonRelease>", lambda *args : jog_cmd.stop_jog())
+            button.bind("<ButtonRelease>", lambda *args: jog_cmd.stop_jog())
             button.grid(row=1, column=col, sticky="nsew")
 
-        self.buttons["neg"].bind("<ButtonPress>", lambda *args : jog_cmd.joint_jog(self.ctrl.idx, 5))
-        self.buttons["pos"].bind("<ButtonPress>", lambda *args : jog_cmd.joint_jog(self.ctrl.idx, 5))
+        self.buttons["neg"].bind(
+            "<ButtonPress>", lambda *args: jog_cmd.joint_jog(self.ctrl.idx, -5)
+        )
+        self.buttons["pos"].bind("<ButtonPress>", lambda *args: jog_cmd.joint_jog(self.ctrl.idx, 5))
 
     def mk_labels(self):
         """docstring"""
@@ -108,10 +111,9 @@ class JointFrame:
             to=self.ctrl.limits["pos"],
             length=length,
             orient=tk.HORIZONTAL,
-            command=self.sliderUpdate,
+            command=self.slider_update,
         )
-        self.slider.bind("<ButtonRelease-1>", self.sliderExecute)
-        # self.slider.place(x=x, y=y)
+        self.slider.bind("<ButtonRelease-1>", self.slider_execute)
         self.slider.grid(row=1, column=2, sticky="nsew")
 
     def jog(self):
@@ -128,7 +130,7 @@ class JointFrame:
         """
         live = self.idx * 10
         is_increment = int(GUI.is_increment.get())
-        if is_increment :
+        if is_increment:
             J1jogNeg(float(incrementEntryField.get()))
         else:
             LiveJointJog(live)
@@ -141,25 +143,26 @@ class JointFrame:
 
         live = self.idx * 10 + 1
         is_increment = int(GUI.is_increment.get())
-        if is_increment :
+        if is_increment:
             J1jogPos(float(incrementEntryField.get()))
         else:
             LiveJointJog(live)
 
-    def sliderUpdate(self):
+    def slider_update(self, *args):
         """docstring"""
 
-        text = round(float(self.labels["slide"].get()), 2)
+        text = round(float(self.slider.get()), 2)
         self.labels["slide"].config(text=text)
 
-    def sliderExecute(foo):
+    def slider_execute(foo):
         """docstring"""
 
-        self.delta = float(self.labels["slide"].get()) - float(self.entry.get())
-        # TODO: fix to be just "jog"
+        self.delta = float(self.entry.get()) - float(self.slider.get())
+
         jog_cmd.joint_jog(self.ctrl.idx, self.delta)
-        func = jogNeg if self.delta < 0 else jogPos
-        func(abs(self.delta))
+        # TODO: fix to be just "jog"
+        # func = jogNeg if self.delta < 0 else jogPos
+        # func(abs(self.delta))
 
     def label(self, value):
         """labels entry with a value"""
@@ -183,6 +186,7 @@ class AxisFrame:
 
     "ie: XcurEntryField"
 
+    main = dict()
     active = dict()
 
     def __init__(self, parent, x, y, name):
@@ -199,10 +203,16 @@ class AxisFrame:
 
         font = ("Arial", 18)
         self.labels = {"main": tk.Label(self.frame, font=font, text=name.upper())}
-        self.labels["main"].grid(row=0, column=0,  sticky="ew")
+        self.labels["main"].grid(row=0, column=0, sticky="ew")
         center(self.labels["main"])
 
+        # jog commands
+        self.manual = jog_cmd.car_jog
+        self.live = jog_cmd.live_car_jog
+
         AxisFrame.active[name] = self
+        if "t" not in name:
+            AxisFrame.main[name] = self
 
     def label(self, value):
         """labels entry with a value"""
@@ -229,50 +239,51 @@ class AxisFrame:
 
     def jog(self, fwd):
         """jogs in a direction"""
-        raise "not implemented"
-        # NOTE see jog/jog_buttons.py
+
+        use_increment = int(IncJogStat.get())
+        increment = float(incrementEntryField.get())
+
+        # TODO why 10?
+        response = self.manual(increment, axis=self.name) if use_increment else self.live(10)
 
 
-class GUI:
-    """GUI manager for everyting"""
+class ToolFrame(AxisFrame):
+    """docstring"""
 
-    def __init__(
-        self,
-    ):
-        pass
+    def __init__(self, parent, x, y, name):
+        self.name = "t" + name
+        super(ToolFrame, self).__init__(parent, x, y, self.name)
 
-    @classmethod
-    def register(cls, k, v):
-        setattr(GUI, k, v)
+        self.manual = None
+        self.live = None
 
+# NOTE reminder
+"""
+SelXjogNeg = lambda: btn_jog(XjogNeg, 10)
+SelXjogPos = lambda: btn_jog(XjogPos, 11)
+SelYjogNeg = lambda: btn_jog(YjogNeg, 20)
+SelYjogPos = lambda: btn_jog(YjogPos, 21)
+SelZjogNeg = lambda: btn_jog(ZjogNeg, 30)
+SelZjogPos = lambda: btn_jog(ZjogPos, 31)
 
-class EntryField:
-    """generic entry field"""
+SelRzjogNeg = lambda: btn_jog(RzjogNeg, 40)
+SelRzjogPos = lambda: btn_jog(RzjogPos, 41)
+SelRyjogNeg = lambda: btn_jog(RyjogNeg, 50)
+SelRyjogPos = lambda: btn_jog(RyjogPos, 51)
+SelRxjogNeg = lambda: btn_jog(RxjogNeg, 60)
+SelRxjogPos = lambda: btn_jog(RxjogPos, 61)
 
-    active = dict()
+SelTxjogNeg = lambda: btn_jog(TXjogNeg, 10)
+SelTxjogPos = lambda: btn_jog(TXjogPos, 11)
+SelTyjogNeg = lambda: btn_jog(TYjogNeg, 20)
+SelTyjogPos = lambda: btn_jog(TYjogPos, 21)
+SelTzjogNeg = lambda: btn_jog(TZjogNeg, 30)
+SelTzjogPos = lambda: btn_jog(TZjogPos, 31)
 
-    def __init__(self, parent, width=5, name='',alt=''):
-
-        self.name = name
-
-        self.frame = tk.Frame(parent) 
-
-        self.lab = tk.Label(self.frame, text=name if not alt else alt)
-        self.lab.grid(row=0, column=0, sticky="nsew")
-        self.entry = tk.Entry(self.frame,width=width) if width else tk.Entry(self.frame)
-        self.entry.grid(row=0, column=1, sticky="nsew")
-
-        EntryField.active[name] = self
-
-    def grid(self, *args, **kwargs):
-        """docstring"""
-        self.frame.grid(*args, **kwargs)
-
-
-    def label(self, value):
-        """labels entry with a value"""
-        # TODO abstract with other frames
-        # TODO call this "display()"
-
-        self.entry.delete(0, "end")
-        self.entry.insert(0, str(value))
+SelTRzjogNeg = lambda: btn_jog(TRzjogNeg, 40)
+SelTRzjogPos = lambda: btn_jog(TRzjogPos, 41)
+SelTRyjogNeg = lambda: btn_jog(TRyjogNeg, 50)
+SelTRyjogPos = lambda: btn_jog(TRyjogPos, 51)
+SelTRxjogNeg = lambda: btn_jog(TRxjogNeg, 60)
+SelTRxjogPos = lambda: btn_jog(TRxjogPos, 61)
+"""

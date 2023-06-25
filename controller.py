@@ -1,12 +1,12 @@
+from gui.base import GUI
 
 def xbox():
     def threadxbox():
         from inputs import get_gamepad
 
-        global xboxUse
         jogMode = 1
-        if xboxUse == 0:
-            xboxUse = 1
+        if not GUI.use_xbox :
+            GUI.use_xbox = 1
             mainMode = 1
             jogMode = 1
             grip = 0
@@ -18,14 +18,14 @@ def xbox():
             ChgDis(2)
 
         else:
-            xboxUse = 0
+            GUI.use_xbox = 0
             almStatusLab.config(text="XBOX CONTROLLER OFF", style="Warn.TLabel")
             almStatusLab2.config(text="XBOX CONTROLLER OFF", style="Warn.TLabel")
             xbcStatusLab.config(
                 text="Xbox OFF",
             )
 
-        while xboxUse == 1:
+        while GUI.use_xbox :
             try:
                 # if (TRUE):
                 events = get_gamepad()

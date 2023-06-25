@@ -1,20 +1,48 @@
-import serial
-import time
-import pickle
-import tkinter as tk
 import datetime as dt
+import pickle
+import time
+import tkinter as tk
+
+import serial
+
+from gui.base import GUI, ButtonEntry
+
+
+class COMPortFrame(ButtonEntry):
+    """docstring"""
+
+    # TODO migrate to frames
+
+    def __init__(self, parent, name=None, serial_idx=None):
+        super(COMPortFrame, self).__init__(parent, name)
+
+        assert not serial_idx is None
+        self.serial_idx = serial_idx
+        self.label = tk.Label(self.frame, text=f"{self.name.upper()} COM PORT:")
+        # TODO fix layout
+        self.label.grid(row=1, column=0)
+
+    def command(self):
+        COM.set(self.serial_idx)
+
 
 class COM:
     """singleton communication handler"""
 
     ser = [None, None]
     alms = []
-    tabs = None
-    style, text = None,None
-    startup=None
+    style, text = None, None
+    startup = None
 
-    def __init__(self, tabs, start_func):
-        COM.tabs = tabs
+    teensy, arduino = None, None
+
+    def __init__(self, start_func):
+        print("initiate serial communitation")
+
+        if self.teensy is None:
+            COM.teensy = COMPortFrame(GUI.tabs["2"], name="teensy", serial_idx=0)
+        if self.arduino is None:
+            COM.arduino = COMPortFrame(GUI.tabs["2"], name="arduino", serial_idx=1)
         COM.startup = start_func
 
     @classmethod
@@ -26,16 +54,16 @@ class COM:
         baud = [9600, 115200][idx]
 
         def log_message(msg):
-            try: 
-                COM.tabs["6"].ElogView.insert(tk.END, f"{now} - {msg}")
-                value = COM.tabs["6"].ElogView.get(0, tk.END)
+            try:
+                GUI.tabs["6"].ElogView.insert(tk.END, f"{now} - {msg}")
+                value = GUI.tabs["6"].ElogView.get(0, tk.END)
                 pickle.dump(value, open("ErrorLog", "wb"))
             except Exception as ex:
                 print(ex)
 
         try:
             port = "/dev/cu.usbmodem123843001"
-            COM.ser[idx] = serial.Serial(port, baud)
+            COM.ser[idx] = serial.Serial(port, baud)  # , timeout=2)
 
             text = f"COMMUNICATIONS STARTED WITH {board}"
 
@@ -53,37 +81,35 @@ class COM:
 
             text = f"UNABLE TO ESTABLISH COMMUNICATIONS WITH {board}"
             print(text)
-            raise ex
             COM.alarm(text, True)
             log_message(text)
 
-
-
     @classmethod
-    def register_alm(cls,alm):
+    def register_alm(cls, alm):
         """registers alarm label"""
         COM.alms.append(alm)
 
     def alarm(text, red=True):
         """docstring"""
 
-        style = "Warn.TLabel" if red else  "OK.TLabel"
+        style = "Warn.TLabel" if red else "OK.TLabel"
         if not style:
-            raise Exception('TODO get new style')
+            raise Exception("TODO get new style")
 
         for alm in COM.alms:
             alm.config(text=text, style=style)
 
-
-
     @classmethod
-    def serial_write(cls,command):
+    def serial_write(cls, command, idx=0):
         """send message to serial port"""
 
-        ser = COM.ser[0]
+        print("command:", command.strip("\n"))
+        ser = COM.ser[idx]
 
         ser.write(command.encode())
         ser.flushInput()
         time.sleep(0.2)
         response = str(ser.readline().strip(), "utf-8")
+        print("response:", response)
+        print()
         return response

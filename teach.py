@@ -1,7 +1,3 @@
-##############################################################################################################################################################
-### TEACH DEFS ################################################################################################################################ TEACH DEFS ###
-##############################################################################################################################################################
-
 
 def teachInsertBelSelected():
 
@@ -25,7 +21,7 @@ def teachInsertBelSelected():
         tab1.progView.select_set(selRow)
 
     Speed = speedEntryField.get()
-    speedtype = speedOption.get()
+    speedtype = speed_option.get()
 
     if speedtype == "Seconds":
         speedPrefix = "Ss"
@@ -39,121 +35,46 @@ def teachInsertBelSelected():
     ACCramp = ACCrampField.get()
     Rounding = roundEntryField.get()
     movetype = options.get()
+    
+    def get_new_pos():
+        """docstring"""
+
+        return  (
+            f"{movetype} [*] X {XcurPos} Y {YcurPos} Z {ZcurPos} Rz {RzcurPos} "
+            f"Ry {RycurPos} Rx {RxcurPos} J7 {J7PosCur} J8 {J8PosCur} J9 {J9PosCur} "
+            f"{speedPrefix} {Speed} Ac {ACCspd} Dc {DECspd} Rm {ACCramp} $ {WC}"
+        )
+
+    def case1():
+        """docstring"""
+
+        tab1.progView.insert(selRow, get_new_pos())
+        tab1.progView.selection_clear(0, END)
+        tab1.progView.select_set(selRow)
+        value = tab1.progView.get(0, END)
+        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
+    def case2():
+        """docstring"""
+
+        tab1.progView.insert(selRow, alt_new_pos)
+        tab1.progView.selection_clear(0, END)
+        tab1.progView.select_set(selRow)
+        value = tab1.progView.get(0, END)
+        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
 
     if movetype == "OFF J":
         movetype = movetype + " [ PR: " + str(SavePosEntryField.get()) + " ]"
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     if movetype == "Move Vis":
         movetype = movetype + " [ PR: " + str(SavePosEntryField.get()) + " ]"
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move PR":
         movetype = movetype + " [ PR: " + str(SavePosEntryField.get()) + " ]"
-        newPos = (
-            movetype
-            + " [*]"
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "OFF PR ":
         movetype = (
@@ -164,301 +85,40 @@ def teachInsertBelSelected():
             + str(int(SavePosEntryField.get()) + 1)
             + " ] "
         )
-
-        newPos = (
-            movetype
-            + " [*]"
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move J":
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move L":
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " Rnd "
-            + Rounding
-            + " $ "
-            + WC
-        )
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move R":
-        newPos = (
-            movetype
-            + " [*] J1 "
-            + J1AngCur
-            + " J2 "
-            + J2AngCur
-            + " J3 "
-            + J3AngCur
-            + " J4 "
-            + J4AngCur
-            + " J5 "
-            + J5AngCur
-            + " J6 "
-            + J6AngCur
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move A Mid":
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move A End":
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move C Center":
-        newPos = (
-            movetype
-            + " [*] X "
-            + XcurPos
-            + " Y "
-            + YcurPos
-            + " Z "
-            + ZcurPos
-            + " Rz "
-            + RzcurPos
-            + " Ry "
-            + RycurPos
-            + " Rx "
-            + RxcurPos
-            + " J7 "
-            + str(J7PosCur)
-            + " J8 "
-            + str(J8PosCur)
-            + " J9 "
-            + str(J9PosCur)
-            + " "
-            + speedPrefix
-            + " "
-            + Speed
-            + " Ac "
-            + ACCspd
-            + " Dc "
-            + DECspd
-            + " Rm "
-            + ACCramp
-            + " $ "
-            + WC
-        )
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+        case1()
 
     elif movetype == "Move C Start":
-        newPos = movetype + " [*] X " + XcurPos + " Y " + YcurPos + " Z " + ZcurPos
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
+        alt_new_pos = movetype + " [*] X " + XcurPos + " Y " + YcurPos + " Z " + ZcurPos
+        case2()
 
     elif movetype == "Move C Plane":
-        newPos = movetype + " [*] X " + XcurPos + " Y " + YcurPos + " Z " + ZcurPos
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
+        alt_new_pos = movetype + " [*] X " + XcurPos + " Y " + YcurPos + " Z " + ZcurPos
+        case2()
 
     elif movetype == "Start Spline" or movetype == "End Spline":
-        newPos = movetype
-        tab1.progView.insert(selRow, newPos)
-        tab1.progView.selection_clear(0, END)
-        tab1.progView.select_set(selRow)
-        value = tab1.progView.get(0, END)
-        pickle.dump(value, open(ProgEntryField.get(), "wb"))
+
+        alt_new_pos = movetype
+        case2()
 
     elif movetype == "Teach PR":
         PR = str(SavePosEntryField.get())

@@ -1,4 +1,5 @@
 import tkinter as tk
+from gui.base import GUI
 
 
 
@@ -12,6 +13,9 @@ def deleteitem():
 
 
 def manInsItem():
+    """what does this do"""
+    """something insert item"""
+
     try:
         selRow = tab1.progView.curselection()[0]
         selRow += 1
@@ -19,6 +23,7 @@ def manInsItem():
         last = tab1.progView.index("end")
         selRow = last
         tab1.progView.select_set(selRow)
+
     tab1.progView.insert(selRow, manEntryField.get())
     tab1.progView.selection_clear(0, END)
     tab1.progView.select_set(selRow)
@@ -233,7 +238,7 @@ def IfOffjumpTab():
     tabNumEntryField.delete(0, "end")
 
 
-def Servo():
+def move_servo():
     try:
         selRow = tab1.progView.curselection()[0]
         selRow += 1
@@ -251,15 +256,15 @@ def Servo():
     pickle.dump(value, open(ProgEntryField.get(), "wb"))
 
 
-def loadProg(parent):
-    progframe = tk.Frame(parent)
+def loadProg():
+    progframe = tk.Frame(GUI.tabs['1'])
     progframe.place(x=7, y=174)
 
     scrollbar = tk.Scrollbar(progframe)
     scrollbar.pack(side=RIGHT, fill=Y)
 
-    parent.progView = Listbox(progframe, width=105, height=31, yscrollcommand=scrollbar.set)
-    parent.progView.bind("<<ListboxSelect>>", progViewselect)
+    GUI.tabs['1'].progView = Listbox(progframe, width=105, height=31, yscrollcommand=scrollbar.set)
+    GUI.tabs['1'].progView.bind("<<ListboxSelect>>", progViewselect)
 
     try:
         prog = pickle.load(open(ProgEntryField.get(), "rb"))
@@ -274,42 +279,42 @@ def loadProg(parent):
 
     time.sleep(0.2)
     for item in prog:
-        parent.progView.insert(END, item)
-    parent.progView.pack()
-    scrollbar.config(command=parent.progView.yview)
-    savePosData()
+        GUI.tabs['1'].progView.insert(END, item)
+    GUI.tabs['1'].progView.pack()
+    scrollbar.config(command=GUI.tabs['1'].progView.yview)
+    save_pos_data()
 
 
-def insertCallProg(parent):
+def insertCallProg():
     try:
-        selRow = parent.progView.curselection()[0]
+        selRow = GUI.tabs['1'].progView.curselection()[0]
         selRow += 1
     except:
-        last = parent.progView.index("end")
+        last = GUI.tabs['1'].progView.index("end")
         selRow = last
-        parent.progView.select_set(selRow)
+        GUI.tabs['1'].progView.select_set(selRow)
     newProg = changeProgEntryField.get()
     changeProg = "Call Program - " + newProg
-    parent.progView.insert(selRow, changeProg)
-    parent.progView.selection_clear(0, END)
-    parent.progView.select_set(selRow)
-    value = parent.progView.get(0, END)
+    GUI.tabs['1'].progView.insert(selRow, changeProg)
+    GUI.tabs['1'].progView.selection_clear(0, END)
+    GUI.tabs['1'].progView.select_set(selRow)
+    value = GUI.tabs['1'].progView.get(0, END)
     pickle.dump(value, open(ProgEntryField.get(), "wb"))
 
 
-def insertReturn(parent):
+def insertReturn():
     try:
-        selRow = parent.progView.curselection()[0]
+        selRow = GUI.tabs['1'].progView.curselection()[0]
         selRow += 1
     except:
-        last = parent.progView.index("end")
+        last = GUI.tabs['1'].progView.index("end")
         selRow = last
-        parent.progView.select_set(selRow)
+        GUI.tabs['1'].progView.select_set(selRow)
     value = "Return"
-    parent.progView.insert(selRow, value)
-    parent.progView.selection_clear(0, END)
-    parent.progView.select_set(selRow)
-    value = parent.progView.get(0, END)
+    GUI.tabs['1'].progView.insert(selRow, value)
+    GUI.tabs['1'].progView.selection_clear(0, END)
+    GUI.tabs['1'].progView.select_set(selRow)
+    value = GUI.tabs['1'].progView.get(0, END)
     pickle.dump(value, open(ProgEntryField.get(), "wb"))
 
 
@@ -446,118 +451,6 @@ def getSel():
     manEntryField.delete(0, "end")
     manEntryField.insert(0, command)
 
-
-def serial2_write(command):
-    """docstring"""
-    ser2.write(command.encode())
-    ser2.flushInput()
-    time.sleep(0.2)
-    ser2.read()
-
-
-def Servo0on():
-    savePosData()
-    servoPos = servo0onEntryField.get()
-    command = "SV0P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo0off():
-    savePosData()
-    servoPos = servo0offEntryField.get()
-    command = "SV0P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo1on():
-    savePosData()
-    servoPos = servo1onEntryField.get()
-    command = "SV1P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo1off():
-    savePosData()
-    servoPos = servo1offEntryField.get()
-    command = "SV1P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo2on():
-    savePosData()
-    servoPos = servo2onEntryField.get()
-    command = "SV2P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo2off():
-    savePosData()
-    servoPos = servo2offEntryField.get()
-    command = "SV2P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo3on():
-    savePosData()
-    servoPos = servo3onEntryField.get()
-    command = "SV3P" + servoPos + "\n"
-    serial2_write(command)
-
-def Servo3off():
-    savePosData()
-    servoPos = servo3offEntryField.get()
-    command = "SV3P" + servoPos + "\n"
-    serial2_write(command)
-def _DO_helper(val, on=True):
-    """
-    what is this function?
-    maybe for arduino...
-    """
-    command = ("ONX" if on else "OFX") + outputNum + "\n"
-    serial2_write(command)
-
-def DO1on():
-    outputNum = DO1onEntryField.get()
-    _DO_helper(outputNum,True)
-
-def DO1off():
-    outputNum = DO1offEntryField.get()
-    _DO_helper(outputNum,False)
-
-def DO2on():
-    outputNum = DO2onEntryField.get()
-    _DO_helper(outputNum,True)
-
-def DO2off():
-    outputNum = DO2offEntryField.get()
-    _DO_helper(outputNum,False)
-
-def DO3on():
-    outputNum = DO3onEntryField.get()
-    _DO_helper(outputNum,True)
-
-def DO3off():
-    outputNum = DO3offEntryField.get()
-    _DO_helper(outputNum,False)
-
-def DO4on():
-    outputNum = DO4onEntryField.get()
-    _DO_helper(outputNum,True)
-
-def DO4off():
-    outputNum = DO4offEntryField.get()
-    _DO_helper(outputNum,False)
-
-def DO5on():
-    outputNum = DO5onEntryField.get()
-    _DO_helper(outputNum,True)
-
-def DO5off():
-    outputNum = DO5offEntryField.get()
-    _DO_helper(outputNum,False)
-
-def DO6on():
-    outputNum = DO6onEntryField.get()
-    _DO_helper(outputNum,True)
-
-def DO6off():
-    outputNum = DO6offEntryField.get()
-    _DO_helper(outputNum,False)
-
 def TestString():
     message = testSendEntryField.get()
     command = "TM" + message + "\n"
@@ -604,5 +497,4 @@ def CalcLinVect(X2, Y2, Z2):
 def CalcLinWayPt( CX, CY, CZ, curWayPt):
     pass
     # TODO what is this
-
 

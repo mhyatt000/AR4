@@ -33,15 +33,18 @@ class JointCTRL:
         self.idx = len(JointCTRL.active) - 1
         self.name = f"J{self.idx+1}"
 
-        # int
-        self.open_loop_stat = None
-        self.cal_stat = [tk.IntVar(), tk.IntVar()]
+        # TODO use list?
+        self.no_calibrate = tk.IntVar()
+        self.no_calibrate2 = tk.IntVar()
 
         self.limits = JointCTRL.limits[self.idx]
         self.range = sum(self.limits)
         self.limits = {"pos": self.limits[0], "neg": self.limits[1]}
 
-        self.angle = None
-        self.open_loop = False
+        # TODO should angle be initialized to something else?
+        # ie: read encoder?
+        # maybe not
+        self.angle = 0.0
+        self.open_loop = tk.IntVar()
 
 

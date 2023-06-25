@@ -3,6 +3,52 @@ from tkinter import ttk
 
 from ttkthemes import ThemedStyle
 
+from gui.base import GUI
+
+class ThemeManager:
+
+    def __init__(self, root):
+
+        self.root = root
+        self.style = ThemedStyle(self.root)
+        self.colors = {
+            "light": ["red", "dark orange", "green", "dark blue", "black"],
+            "dark": ["IndianRed1", "orange", "light green", "light blue", "white"],
+        }
+
+    @classmethod
+    def set_theme(self, mode="light"):
+        """sets the theme of the GUI"""
+
+        assert mode in ["light", "dark"]
+        self.style.set_theme("black" if mode == "dark" else "keramik")
+
+        font = ("Arial", "10", "bold")
+        colors = self.colors[mode]
+
+        ttk_style = ttk.Style()
+ 
+        # Prepare configuration parameters
+        widgets = {
+                "Alarm.TLabel": 0,
+                "AlarmBut.TButton": 0,
+                "Warn.TLabel": 1,
+                "OK.TLabel": 2,
+                "Jointlim.TLabel": 3,
+                "Frame1.TFrame": 4,
+        }
+
+        for  widget,i in widgets.items():
+            ttk_style.configure( widget, foreground=colors[i], font=font)
+
+    def light_theme(self):
+        self.set_theme(mode="light")
+
+    def dark_theme(self):
+        self.set_theme(mode="dark")
+
+
+
 theme = 1
 
 
@@ -34,10 +80,10 @@ def set_theme(root, mode="light"):
     style.configure("Frame1.TFrame", background=colors[4])
 
 
-def lightTheme(root):
+def light_theme(root):
     set_theme(root, mode="light")
 
 
-def darkTheme(root):
-    lightTheme(root)
-    # set_theme(root, mode="dark")
+def dark_theme(root):
+    set_theme(root, mode="dark")
+
