@@ -18,14 +18,14 @@ def build():
     link.place(x=10, y=9)
 
     donateBut = tk.Button(GUI.tabs["7"], command=callback)
-    donatePhoto = tk.PhotoImage(file=osp.join("assets", "pp.gif"))
+    donatePhoto = tk.PhotoImage(file=osp.join(GUI.assets, "pp.gif"))
     donateBut.config(image=donatePhoto)
     donateBut.place(x=1250, y=2)
 
     scroll = tk.Scrollbar(GUI.tabs["7"])
     scroll.pack(side=tk.RIGHT, fill=tk.Y)
     configfile = tk.Text(GUI.tabs["7"], wrap=tk.WORD, width=166, height=40, yscrollcommand=scroll.set)
-    filename = osp.join("assets", "information.txt")
+    filename = osp.join(GUI.assets, "information.txt")
 
     with open(filename, "r", encoding="utf-8-sig") as file:
         configfile.insert(tk.INSERT, file.read())

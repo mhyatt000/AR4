@@ -1,4 +1,5 @@
 import datetime
+import load
 import tkinter.ttk as ttk
 import util
 import os.path as osp
@@ -385,7 +386,7 @@ def display_position(response):
     a = idxs.pop(0)
     for i, (k, v) in enumerate(responses.items()):
         # get next index or all the way to the end
-        b = idxs.pop(0) if len(idxs) else 2 * len(responses.keys())
+        b = idxs.pop(0) if len(idxs) else int(1e3)
         responses[k] = response[a + 1 : b].strip()
         a = b
 
@@ -416,7 +417,7 @@ def display_position(response):
 
     pprint(responses)
 
-    save_pos_data()
+    load.save_cfg()
 
     if flag != "":
         print(f"flag: {flag}")
@@ -564,97 +565,9 @@ def SaveAndApplyCalibration():
         calExtAxis()
     except:
         print("no serial connection with Teensy board")
-    save_pos_data()
+    load.save_cfg()
 
 
-def save_pos_data():
-
-    print('no save calibration for now')
-    return
-    GUI.calibration.delete(0, tk.END)
-
-    # TODO stop using theme
-    theme = 1
-
-    # TODO: clean
-    # TODO finish now!
-    toinsert = [
-        *[J.angle for J in JointCTRL.main],
-        *[A.position for A in AxisFrame.main.values()],
-        #
-        COM.teensy.entry.get(),
-        EntryField.active["prog"].entry.get(),
-        #
-        Servo.active[0].on.entry.get(),
-        Servo.active[0].off.entry.get(),
-        Servo.active[1].on.entry.get(),
-        Servo.active[1].off.entry.get(),
-        #
-        DO.active[0].on.entry.get(),
-        DO.active[0].off.entry.get(),
-        DO.active[1].on.entry.get(),
-        DO.active[1].off.entry.get(),
-        #
-        *[x.entry.get() for x in ToolFrame.active.values()],
-        *[J.gui.entry.get() for J in JointCTRL.external],
-        EntryField.active["VisFileLoc"].entry.get(),
-        GUI.visoptions.get(),
-        #
-        EntryField.active["VisPicOxP"].entry.get(),
-        EntryField.active["VisPicOxM"].entry.get(),
-        EntryField.active["VisPicOyP"].entry.get(),
-        EntryField.active["VisPicOyM"].entry.get(),
-        EntryField.active["VisPicXP"].entry.get(),
-        EntryField.active["VisPicXM"].entry.get(),
-        EntryField.active["VisPicYP"].entry.get(),
-        EntryField.active["VisPicYM"].entry.get(),
-        #
-        *[J.offset.entry.get() for J in JointCal.main],
-        *[int(J.open_loop.get()) for J in JointCal.main],
-        #
-        COM.arduino.entry.get(),
-        theme,
-        *[J.no_autocal.get() for J in JointCal.main],
-        # J7
-        *[x.get() for x in JointCal.active[6].vars.values()],
-        JointCTRL.active[6].angle,
-        *[0 for _ in range(6)],  # calstat2
-        #
-        GUI.VisBrightSlide.get(),
-        GUI.VisContrastSlide.get(),
-        EntryField.active["VisBacColor"].entry.get(),
-        EntryField.active["VisScore"].entry.get(),
-        EntryField.active["VisX1Pix"].entry.get(),
-        EntryField.active["VisY1Pix"].entry.get(),
-        EntryField.active["VisX2Pix"].entry.get(),
-        EntryField.active["VisY2Pix"].entry.get(),
-        EntryField.active["VisX1Rob"].entry.get(),
-        EntryField.active["VisY1Rob"].entry.get(),
-        EntryField.active["VisX2Rob"].entry.get(),
-        EntryField.active["VisY2Rob"].entry.get(),
-        #
-        GUI.VisZoomSlide.get(),
-        GUI.pick180.get(),
-        GUI.pickClosest.get(),
-        GUI.visoptions.get(),
-        GUI.full_rot.get(),
-        GUI.autoBG.get(),
-        *[0 for _ in range(4)],  # *[mX1, mY1, mX2, mY2],
-        # J8
-        *[x.get() for x in JointCal.active[7].vars.values()],
-        # J9
-        *[x.get() for x in JointCal.active[8].vars.values()],
-        *[J.offset.entry.get() for J in JointCal.external],
-    ]
-
-    # TODO why make variables to save in calibrate only to read them again?
-    # is it because of pickle maybe?
-    for item in toinsert:
-        GUI.calibration.insert(tk.END, item)
-
-    value = GUI.calibration.get(0, tk.END)
-    # save to file for the next time it is opened
-    pickle.dump(value, open(osp.join(GUI.assets, "ARbot.cal"), "wb"))
 
 
 class SpeedValidator:

@@ -113,7 +113,7 @@ class COM:
         print("command:", command.strip("\n"))
         ser = COM.ser[idx]
 
-        def send_command(ser, command, timeout=0.5):
+        def send_command(ser, command, timeout=60):
             ser.write(command.encode())
             start_time = time.time()
             while ser.in_waiting == 0:

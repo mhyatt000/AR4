@@ -1,3 +1,4 @@
+import load
 import tkinter as tk
 
 from gui.base import GUI, ButtonEntry, EntryField
@@ -29,7 +30,7 @@ class Servo():
 
     @classmethod
     def command(cls, obj, on=True):
-        save_pos_data()
+        load.save_cfg()
         servoPos = obj.entry.get()
         command = f"SV0P{servoPos}\n"
         COM.serial_write(command, serial_idx=1)

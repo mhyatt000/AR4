@@ -1,4 +1,5 @@
 import tkinter as tk
+import load
 from gui.base import GUI
 
 
@@ -282,7 +283,7 @@ def loadProg():
         GUI.tabs['1'].progView.insert(END, item)
     GUI.tabs['1'].progView.pack()
     scrollbar.config(command=GUI.tabs['1'].progView.yview)
-    save_pos_data()
+    load.save_cfg()
 
 
 def insertCallProg():

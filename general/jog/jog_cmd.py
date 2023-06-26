@@ -54,7 +54,6 @@ def joint_jog(joint, value):
     joints = JointCTRL.active
     angles = [J.angle for J in joints]
 
-
     if not GUI.use_xbox:
         COM.alarm("SYSTEM READY", False)
 
@@ -94,7 +93,6 @@ def joint_jog(joint, value):
     record_command(command)
 
     response = COM.serial_write(command)
-    print(response)
     serial_err_handle(response)
 
 

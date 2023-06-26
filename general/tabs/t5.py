@@ -20,7 +20,7 @@ import theme
 
 def mk_img(path):
     """docstring"""
-    return ImageTk.PhotoImage(Image.open(osp.join("assets", path)))
+    return ImageTk.PhotoImage(Image.open(osp.join(GUI.assets, path)))
 
 
 def build():

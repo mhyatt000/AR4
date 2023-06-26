@@ -45,7 +45,8 @@ from tabs import root, t1, t2, t3, t4, t5, t6, t7, t10
 def main():
     """docstring"""
 
-    ROOT = osp.dirname(__file__)
+    ROOT = osp.dirname(osp.dirname(__file__))
+    print(ROOT)
     assets = osp.join(ROOT, "assets")
     GUI.register("assets", assets)
 

@@ -1,32 +1,33 @@
 import os
+from servo import Servo, DO
+import json
 import os.path as osp
 import pickle
 import tkinter as tk
 import tkinter.ttk as ttk
 
+from calibrate import JointCal
 from com import COM
 from frames import AxisFrame, ExtJointFrame, JointFrame, ToolFrame
 from gui.base import GUI, EntryField
 from joint import JointCTRL
-from calibrate import JointCal
 import theme
 import vision
+
+get_cfg = lambda: osp.join(GUI.assets, "cfg.json")
 
 
 def read_calfile():
     """docstring"""
 
     # TODO use json not pickle
-    calfile = osp.join(GUI.assets, "ARbot.cal")
     try:
-        Cal = pickle.load(open(calfile, "rb"))
-        print(Cal)
+        with open(get_cfg(),'r') as file:
+            cfg = json.load(file)
+        return cfg
     except:
-        Cal = "0"
-        # pickle.dump(Cal, open(calfile, "wb"))
-    for item in Cal:
-        print(item)
-        GUI.calibration.insert(tk.END, item)
+        raise Exception
+        return {}
 
 
 def load_presets():
@@ -153,9 +154,9 @@ def load_presets():
     ####
 
     # if select_theme == 1:
-        # theme.dark_theme(GUI.root)
+    # theme.dark_theme(GUI.root)
     # else:
-        # theme.light_theme(GUI.root)
+    # theme.light_theme(GUI.root)
 
     calstats = [calibration.get(55 + i) for i in range(6)]
     for J, calstat in zip(JointCal.active[:6], calstats):
@@ -226,8 +227,61 @@ def load_presets():
 
     # TODO what is autoBG
     # vision.updateVisOp(GUI.tabs)
-    # vision.checkAutoBG(autoBG, VisBacColorEntryField)  
+    # vision.checkAutoBG(autoBG, VisBacColorEntryField)
 
     # TODO what does this do?
     # manEntryField.delete(0, 'end')
     # manEntryField.insert(0,value)
+
+
+def save_cfg():
+
+    cfg = {
+        "angles": [J.angle for J in JointCTRL.main],
+        "coord": [A.position for A in AxisFrame.main.values()],  # cartesian coordinates
+        "teensy": COM.teensy.entry.get(),
+        "program": EntryField.active["prog"].entry.get(),
+        "servos": [
+            {k: v.entry.get() for k, v in zip(["on", "off"], [x.on, x.off])} for x in Servo.active
+        ],
+        "DO": [
+            DO.active[0].on.entry.get(),
+            DO.active[0].off.entry.get(),
+            DO.active[1].on.entry.get(),
+            DO.active[1].off.entry.get(),
+        ],
+        "tool_frame": [x.entry.get() for x in ToolFrame.active.values()],
+        "positions": [J.gui.entry.get() for J in JointCTRL.external],
+        "vision": [
+            {k: v.entry.get() for k, v in EntryField.active.items() if "Vis" in k},
+            GUI.visoptions.get(),
+            GUI.VisBrightSlide.get(),
+            GUI.VisContrastSlide.get(),
+        ],
+        "offsets": [J.offset.entry.get() for J in JointCal.active],
+        "open_loop": [int(J.open_loop.get()) for J in JointCal.main],
+        "arduino": COM.arduino.entry.get(),
+        "theme": 1,
+        "autocal": [J.no_autocal.get() for J in JointCal.main],  # why no autocal?
+        "calstat": [0 for J in JointCTRL.active],  # calstat2
+        "external": {
+            J.name: {
+                "fields": [x.get() for x in JCal.vars.values()],
+                "x": J.angle,  # TODO double check this
+            }
+            for J, JCal in zip(JointCTRL.external, JointCal.external)
+        },
+        "other": [
+            GUI.VisZoomSlide.get(),
+            GUI.pick180.get(),
+            GUI.pickClosest.get(),
+            GUI.visoptions.get(),
+            GUI.full_rot.get(),
+            GUI.autoBG.get(),
+            *[0 for _ in range(4)],  # *[mX1, mY1, mX2, mY2],
+        ],
+    }
+
+    GUI.cfg = cfg
+    with open(get_cfg(), 'w') as file:
+        json.dump(cfg,file)

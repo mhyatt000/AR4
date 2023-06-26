@@ -1,8 +1,5 @@
 void loop() {
 
-  ////////////////////////////////////
-  ///////////start loop///////////////
-
   if (splineEndReceived == false) {
     processSerial();
   }
