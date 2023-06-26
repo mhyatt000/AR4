@@ -1,4 +1,5 @@
 import datetime
+import load
 
 import math
 from multiprocessing.resource_sharer import stop
@@ -35,7 +36,7 @@ from joint import JointCTRL
 from program import *
 import servo
 from teach import *
-from theme import *
+import theme
 
 # from pygrabber.dshow_graph import FilterGraph
 
@@ -45,10 +46,8 @@ def main():
     """docstring"""
 
     ROOT = osp.dirname(__file__)
-    ASSETS = osp.join(ROOT, "assets")
-    GUI.register("assets", ASSETS)
-
-
+    assets = osp.join(ROOT, "assets")
+    GUI.register("assets", assets)
 
     root.build()
 
@@ -61,7 +60,6 @@ def main():
     t7.build()
     t10.build()
 
-
     def startup():
         moveInProc = 0
         calibrate.tool_frame()
@@ -71,16 +69,6 @@ def main():
         commands.read_encoders()
         calibrate.send_pos()
         calibrate.request_pos()
-
-
-    class FrameOrganizer:
-        """docstring"""
-
-        def __init__(self):
-            pass
-
-
-    load.load_presets()
 
     # TODO i think this was in the way of other buttons
     # loadProg(tabs)
@@ -97,9 +85,10 @@ def main():
 
     GUI.use_xbox = 0
 
+
     COM(startup)
-    COM.register_alm(almStatusLab)
-    COM.register_alm(almStatusLab2)
+    load.load_presets()
+
     COM.set()
 
     def limit():
@@ -107,12 +96,11 @@ def main():
 
         while True:
             commands.test_limit_switch()
-            time.sleep(1)
+            time.sleep(0.21)
 
 
     # limit()
-
-    tabs["1"].mainloop()
+    GUI.tabs["1"].mainloop()
 
 if __name__ == "__main__":
     main()

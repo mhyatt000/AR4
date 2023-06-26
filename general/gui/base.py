@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.ttk as ttk
 
 class GUI:
     """GUI manager for everyting"""
@@ -21,11 +22,11 @@ class EntryField:
 
         self.name = name
 
-        self.frame = tk.Frame(parent) 
+        self.frame = ttk.Frame(parent) 
 
-        self.lab = tk.Label(self.frame, text=name if not alt else alt)
+        self.lab = ttk.Label(self.frame, text=name if not alt else alt)
         self.lab.grid(row=0, column=0, sticky="nsew")
-        self.entry = tk.Entry(self.frame,width=width) if width else tk.Entry(self.frame)
+        self.entry = ttk.Entry(self.frame,width=width) if width else ttk.Entry(self.frame)
         self.entry.grid(row=0, column=1, sticky="nsew")
 
         EntryField.active[name] = self
@@ -33,6 +34,11 @@ class EntryField:
     def grid(self, *args, **kwargs):
         """docstring"""
         self.frame.grid(*args, **kwargs)
+
+
+    def place(self, *args, **kwargs):
+        """docstring"""
+        self.frame.place(*args, **kwargs)
 
 
     def display(self, value=None):
@@ -60,16 +66,16 @@ class ButtonEntry:
 
     active = {}
 
-    def __init__(self, parent, name=None):
+    def __init__(self, parent, name=None, alt=None):
 
         self.idx = len(ButtonEntry.active)
         self.name = f"{type(self).__name__}{self.idx}" if not name else name
-        self.frame = tk.Frame(parent)
+        self.frame = ttk.Frame(parent)
 
-        self.button = tk.Button(self.frame, text=self.name, command=self.command)
+        self.button = ttk.Button(self.frame, text=self.name if not alt else alt, command=self.command)
         self.button.grid(row=0, column=0)
 
-        self.entry = tk.Entry(self.frame, width=5)
+        self.entry = ttk.Entry(self.frame, width=5)
         self.entry.grid(row=0, column=1)
 
         ButtonEntry.active[self.name] = self
@@ -78,3 +84,13 @@ class ButtonEntry:
 
     def command(self):
         raise Exception("not implemented")
+
+    def grid(self, *args, **kwargs):
+        """docstring"""
+        self.frame.grid(*args, **kwargs)
+
+
+    def place(self, *args, **kwargs):
+        """docstring"""
+        self.frame.place(*args, **kwargs)
+

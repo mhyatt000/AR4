@@ -92,9 +92,9 @@ def build():
         camList = graph.get_input_devices()
     except:
         camList = ["Select a Camera"]
-    visoptions = tk.StringVar(GUI.tabs["5"])
-    visoptions.set("Select a Camera")
-    vismenu = tk.OptionMenu(GUI.tabs["5"], visoptions, camList[0], *camList)
+    GUI.visoptions = tk.StringVar(GUI.tabs["5"])
+    GUI.visoptions.set("Select a Camera")
+    vismenu = tk.OptionMenu(GUI.tabs["5"], GUI.visoptions, camList[0], *camList)
     vismenu.config(width=20)
     vismenu.place(x=10, y=10)
 
@@ -119,10 +119,13 @@ def build():
     maskBut = tk.Button(GUI.tabs["5"], text="Mask", width=5, command=vision.selectMask)
     maskBut.place(x=10, y=150)
 
+    # TODO refactor
+
     VisZoomSlide = tk.Scale(GUI.tabs["5"], from_=50, to=1, length=250, orient=tk.HORIZONTAL)
     VisZoomSlide.bind("<ButtonRelease-1>", vision.VisUpdateBriCon)
     VisZoomSlide.place(x=75, y=95)
     VisZoomSlide.set(50)
+    GUI.VisZoomSlide = VisZoomSlide
 
     VisZoomLab = ttk.Label(GUI.tabs["5"], text="Zoom")
     VisZoomLab.place(x=75, y=115)
@@ -130,6 +133,7 @@ def build():
     VisBrightSlide = tk.Scale(GUI.tabs["5"], from_=-127, to=127, length=250, orient=tk.HORIZONTAL)
     VisBrightSlide.bind("<ButtonRelease-1>", vision.VisUpdateBriCon)
     VisBrightSlide.place(x=75, y=130)
+    GUI.VisBrightSlide = VisBrightSlide
 
     VisBrightLab = ttk.Label(GUI.tabs["5"], text="Brightness")
     VisBrightLab.place(x=75, y=150)
@@ -137,6 +141,7 @@ def build():
     VisContrastSlide = tk.Scale(GUI.tabs["5"], from_=-127, to=127, length=250, orient=tk.HORIZONTAL)
     VisContrastSlide.bind("<ButtonRelease-1>", vision.VisUpdateBriCon)
     VisContrastSlide.place(x=75, y=165)
+    GUI.VisContrastSlide = VisContrastSlide
 
     VisContrastLab = ttk.Label(GUI.tabs["5"], text="Contrast")
     VisContrastLab.place(x=75, y=185)
@@ -144,15 +149,15 @@ def build():
     GUI.full_rotCbut = tk.Checkbutton(GUI.tabs["5"], text="Full Rotation Search", variable=GUI.full_rot)
     GUI.full_rotCbut.place(x=900, y=255)
 
-    pick180Cbut = tk.Checkbutton(GUI.tabs["5"], text="Pick Closest 180°", variable=pick180)
+    pick180Cbut = tk.Checkbutton(GUI.tabs["5"], text="Pick Closest 180°", variable=GUI.pick180)
     pick180Cbut.place(x=900, y=275)
 
     pickClosestCbut = tk.Checkbutton(
-        GUI.tabs["5"], text="Try Closest When Out of Range", variable=pickClosest
+        GUI.tabs["5"], text="Try Closest When Out of Range", variable=GUI.pickClosest
     )
     pickClosestCbut.place(x=900, y=295)
 
-    saveCalBut = Button(
+    saveCalBut = tk.Button(
         GUI.tabs["5"], text="SAVE VISION DATA", width=26, command=calibrate.SaveAndApplyCalibration
     )
     saveCalBut.place(x=915, y=340)
@@ -160,32 +165,22 @@ def build():
     #### 5 ENTRY FIELDS##########################################################
     #############################################################################
 
-    def make_entry_field(tab, text, x, y):
-        """makes a new entry field"""
-
-        field = tk.Entry(tab, width=15)
-        field.place(x=x, y=y)
-        label = ttk.Label(tab, text=text)
-        label.place(x=x, y=y + 20)
-        return field, label
-
-    bgAutoCbut = tk.Checkbutton(GUI.tabs["5"], command=vision.checkAutoBG, text="Auto", variable=autoBG)
+    bgAutoCbut = tk.Checkbutton(GUI.tabs["5"], command=vision.checkAutoBG, text="Auto", variable=GUI.autoBG)
     bgAutoCbut.place(x=490, y=101)
-
-    a, b = make_entry_field(GUI.tabs["5"], "Background Color", 390, 100)
-    VisBacColorEntryField, VisBacColorLab = a, b
-
-    a, b = make_entry_field(GUI.tabs["5"], "Score Threshold", 390, 150)
-    VisScoreEntryField, VisScoreLab = a, b
 
     # TODO: finish abstracting
 
+    EntryField(GUI.tabs["5"], name='VisBacColor', alt="Background Color")
+    EntryField(GUI.tabs["5"], name = 'VisScore', alt="Score Threshold")
+
     EntryField(GUI.tabs["5"],name='VisRetScore' ,alt="Scored Value")
     EntryField(GUI.tabs["5"],name='VisRetAngle' ,alt="Found Angle")
+
     EntryField(GUI.tabs["5"],name='VisRetXpix' ,alt="Pixel X Position")
     EntryField(GUI.tabs["5"],name='VisRetYpix' ,alt="Pixel Y Position")
     EntryField(GUI.tabs["5"],name='VisRetXrob' ,alt="Robot X Position")
     EntryField(GUI.tabs["5"],name='VisRetYrob' ,alt="Robot Y Position")
+
     EntryField(GUI.tabs["5"],name='VisX1Pix' ,alt="X1 Pixel Pos")
     EntryField(GUI.tabs["5"],name='VisY1Pix' ,alt="Y1 Pixel Pos")
     EntryField(GUI.tabs["5"],name='VisX2Pix' ,alt="X2 Pixel Pos")
@@ -197,19 +192,20 @@ def build():
 
     EntryField(GUI.tabs["5"],name='VisFileLoc' ,alt="Vision File Location:")
 
-    VisPicOxPEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicOxMEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicOyPEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicOyMEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicXPEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicXMEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicYPEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisPicYMEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisXfindEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisYfindEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisRZfindEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisXpixfindEntryField = tk.Entry(GUI.tabs["5"], width=5)
-    VisYpixfindEntryField = tk.Entry(GUI.tabs["5"], width=5)
+    EntryField(GUI.tabs["5"],name='VisPicOxP')
+    EntryField(GUI.tabs["5"],name='VisPicOxM')
+    EntryField(GUI.tabs["5"],name='VisPicOyP')
+    EntryField(GUI.tabs["5"],name='VisPicOyM')
+    EntryField(GUI.tabs["5"],name='VisPicXP')
+    EntryField(GUI.tabs["5"],name='VisPicXM')
+    EntryField(GUI.tabs["5"],name='VisPicYP')
+    EntryField(GUI.tabs["5"],name='VisPicYM')
+
+    EntryField(GUI.tabs["5"],name='VisXfind')
+    EntryField(GUI.tabs["5"],name='VisYfind')
+    EntryField(GUI.tabs["5"],name='VisRZfind')
+    EntryField(GUI.tabs["5"],name='VisXpixfind')
+    EntryField(GUI.tabs["5"],name='VisYpixfind')
 
     VisCalPixLab = ttk.Label(GUI.tabs["5"], text="Calibration Pixels:")
     VisCalmmLab = ttk.Label(GUI.tabs["5"], text="Calibration Robot MM:")

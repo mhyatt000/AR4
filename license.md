@@ -19,11 +19,11 @@
         * Redistributions in binary form must reproduce the above copyright
           notice, this list of conditions and the following disclaimer in the
           documentation and/or other materials provided with the distribution.
-        * you must give appropriate credit and indicate if changes were made. You may do
-          so in any reasonable manner, but not in any way that suggests the
+        * you must give appropriate credit and indicate if changes were made. 
+          You may do so in any reasonable manner, but not in any way that suggests the
           licensor endorses you or your use.
-		* Selling robots, robot parts, or any versions of robots or software based on this 
-		  work is strictly prohibited.
+		* Selling robots, robot parts, or any versions of robots or software 
+          based on this work is strictly prohibited.
 
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
     ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED

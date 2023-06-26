@@ -1,14 +1,173 @@
 import datetime
-from pprint import pprint
-from servo import Servo, DO
+import tkinter.ttk as ttk
+import util
+import os.path as osp
 import pickle
 from pprint import pprint
 import tkinter as tk
 
 from com import COM
-from frames import AxisFrame  , ToolFrame # make so its the same pattern as joint
+from frames import AxisFrame  # make so its the same pattern as joint
+from frames import ToolFrame
 from gui.base import GUI, EntryField
-from joint import JointCTRL
+from joint import  JointCTRL
+from servo import DO, Servo
+
+
+class JointCal:
+    """Joint Calibrator and GUI interface
+    Located on Tab 2
+    """
+
+    active = []
+    main = []
+    external = []
+
+    def __init__(self, parent):
+
+        self.idx = len(JointCal.active)
+        self.name = f"J{self.idx+1}"
+
+        # can some of this be combined since it shares with JointJog
+        self.frame = ttk.Frame(parent)
+        self.frame.grid(row=self.idx, column=0, pady=10)
+
+        self.open_loop = tk.IntVar()
+        self.no_autocal = tk.IntVar()
+
+        self.mk_sf()
+        self.mk_buttons()
+
+        self.offset = EntryField(self.sf, name=f"{self.name} offset")
+        self.offset.grid(row=0, column=2)
+
+        JointCal.active.append(self)
+        if self.idx < 6:
+            JointCal.main.append(self)
+        else:
+            JointCal.external.append(self)
+
+        util.vgrid(self.frame)
+
+    def mk_sf(self):
+        """makes subframe for spacing"""
+
+        self.sf = ttk.Frame(self.frame)
+
+
+    def mk_buttons(self):
+        """docstring"""
+
+        self.buttons = {
+            "autocal": ttk.Checkbutton(self.sf, text=self.name, variable=self.no_autocal),
+            "cal": ttk.Button(
+                self.sf, text=f"Calibrate {self.name} Only", command=lambda: cal_joint(self.idx)
+            ),
+            "open_loop": ttk.Checkbutton(
+                self.sf, text=f"{self.name} Open Loop", variable=self.open_loop
+            ),
+        }
+
+        for i, btn in zip([0, 1, 3], self.buttons.values()):
+            btn.grid(row=0, column=i)
+
+
+class ExtJointCal(JointCal):
+    """External Joint Calibrator"""
+
+    def __init__(self, parent):
+        super(ExtJointCal, self).__init__(parent)
+
+        self.mk_specs()
+        self.mk_zero()
+        util.vgrid(self.frame)
+
+        self.vars = {
+            'length' : tk.IntVar(),
+            'rotation' : tk.IntVar(),
+            'steps' : tk.IntVar(),
+        }
+
+    def mk_specs(self):
+        """docstring"""
+
+        self.mk_sf()
+        self.fields = {
+            "length": EntryField(self.sf, name=f"{self.name}_length", alt="Length"),
+            "rotation": EntryField(self.sf, name="{self.name}_rot", alt="MM / Rotation"),
+            "steps": EntryField(self.sf, name="{self.name}_steps", alt="Drive Steps"),
+        }
+        util.hgrid(self.sf)
+
+    def mk_zero(self):
+        """docstring"""
+
+        self.mk_sf()
+        self.zero = ttk.Button(self.sf, text=f"Set {self.name} to Zero", command=self.zero_joint)
+        self.pins_label = ttk.Label(self.sf,text="TODO pins")
+        util.hgrid(self.sf)
+
+        """
+        axis7pinsetLab = ttk.Label(
+            left, font=("Arial", 8), text="StepPin = 12 / DirPin = 13 / CalPin = 36"
+        )
+        axis8pinsetLab = ttk.Label(
+            left, font=("Arial", 8), text="StepPin = 32 / DirPin = 33 / CalPin = 37"
+        )
+        axis9pinsetLab = ttk.Label(
+            left, font=("Arial", 8), text="StepPin = 34 / DirPin = 35 / CalPin = 38"
+        )
+        """
+
+    def zero_joint(self):
+        """docstring"""
+        raise Exception
+
+
+
+def cal(command, msg="", joint=None):
+    """basic calibrate"""
+
+    assert msg or joint
+    msg = f"{joint.name}" if not msg else msg
+    response = COM.serial_write(command)
+    msg = handle_response2(response, msg)
+    log_message(msg)
+
+
+
+def cal_joint(idx):
+    """docstring"""
+
+    assert idx in list(range(9))
+    commands = [
+        f"LLA1B0C0D0E0F0G0H0I0",
+        f"LLA0B1C0D0E0F0G0H0I0",
+        f"LLA0B0C1D0E0F0G0H0I0",
+        f"LLA0B0C0D1E0F0G0H0I0",
+        f"LLA0B0C0D0E1F0G0H0I0",
+        f"LLA0B0C0D0E0F1G0H0I0",
+        f"LLA0B0C0D0E0F0G1H0I0",
+        f"LLA0B0C0D0E0F0G0H1I0",
+        f"LLA0B0C0D0E0F0G0H0I1",
+    ]
+    suffix = mk_suffix(mode="calibration")
+    command = commands[idx] + suffix
+    cal(command, joint=JointCTRL.active[idx] )
+
+
+def mk_suffix(mode="calibration"):
+    """docstring"""
+
+    # TODO make some kind of check to see if the command is valid
+    # before sending to teensy
+
+    if mode == "calibration":
+        letters = ["J", "K", "L", "M", "N", "O", "P", "Q", "R"]
+        caloffs = [J.no_calibrate.get() for J in JointCTRL.active]
+        suffix = "".join([f"{a}{b}" for a, b in zip(letters, caloffs)])
+    return suffix
+
 
 
 def stopProg():
@@ -19,7 +178,7 @@ def stopProg():
 def log_message(msg):
     """docstring"""
 
-    print(msg)
+    print('msg:',msg)
     now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
     GUI.tabs["6"].ElogView.insert(tk.END, f"{now} - {msg}")
     value = GUI.tabs["6"].ElogView.get(0, tk.END)
@@ -47,28 +206,6 @@ def handle_response2(response, message):
     return msg
 
 
-def cal(command, msg="", joint=None):
-    """basic calibrate"""
-
-    assert msg or joint
-    msg = f"{joint.name}" if not msg else msg
-    response = COM.serial_write(command)
-    handle_response2(response, msg)
-    log_message(msg)
-
-
-def mk_suffix(mode="caloff"):
-    """docstring"""
-
-    # TODO make some kind of check to see if the command is valid
-    # before sending to teensy
-
-    if mode == "caloff":
-        letters = ["J", "K", "L", "M", "N", "O", "P", "Q", "R"]
-        caloffs = [J.no_calibrate.get() for J in JointCTRL.active]
-        suffix = ''.join([f'{a}{b}' for a, b in zip(letters, caloffs)])
-    return suffix
-
 
 def calRobotAll():
 
@@ -76,44 +213,23 @@ def calRobotAll():
     caloffs = [J.no_calibrate.get() for J in JointCTRL.main]
     calstat = caloffs
 
-    command = f"LLA{caloffs[0]}B{caloffs[1]}C{caloffs[2]}D{caloffs[3]}E{caloffs[4]}F{caloffs[5]}G0H0I0{mk_suffix(mode='caloff')}\n"
+    command = f"LLA{caloffs[0]}B{caloffs[1]}C{caloffs[2]}D{caloffs[3]}E{caloffs[4]}F{caloffs[5]}G0H0I0{mk_suffix(mode='calibration')}\n"
 
     msg = "Stage 1 Auto"
     cal(command, msg)
 
     ##### STAGE 2 ########
     # NOTE maybe this is the other direction??
+    """
     caloffs = [J.no_calibrate2.get() for J in JointCTRL.main]
     calstat2 = caloffs
     if CalStatVal2 > 0:
 
-        command = f"LLA{J1CalStatVal2}B{J2CalStatVal2}C{J3CalStatVal2}D{J4CalStatVal2}E{J5CalStatVal2}F{J6CalStatVal2}G0H0I0{mk_suffix(mode='caloff')}\n"
+        command = f"LLA{J1CalStatVal2}B{J2CalStatVal2}C{J3CalStatVal2}D{J4CalStatVal2}E{J5CalStatVal2}F{J6CalStatVal2}G0H0I0{mk_suffix(mode='calibration')}\n"
 
         msg = "Stage 1 Auto"
         cal(command, msg)
-
-
-def calRobot(idx):
-    """docstring"""
-
-    print(idx)
-    quit()
-
-    assert idx in list(range(9))
-    commands = [
-        f"LLA1B0C0D0E0F0G0H0I0",
-        f"LLA0B1C0D0E0F0G0H0I0",
-        f"LLA0B0C1D0E0F0G0H0I0",
-        f"LLA0B0C0D1E0F0G0H0I0",
-        f"LLA0B0C0D0E1F0G0H0I0",
-        f"LLA0B0C0D0E0F1G0H0I0",
-        f"LLA0B0C0D0E0F0G1H0I0",
-        f"LLA0B0C0D0E0F0G0H1I0",
-        f"LLA0B0C0D0E0F0G0H0I1",
-    ]
-    suffix = mk_suffix(mode="caloff")
-    command = commands[idx] + suffix
-    cal(command, joint=JointCTRL.active[idx] )
+    """
 
 
 def calRobotMid():
@@ -137,9 +253,9 @@ def tool_frame():
     """what does this do"""
 
     chars = ["A", "B", "C", "D", "E", "F"]
-    TF = {k:v.entry.get() for k,v in ToolFrame.active.items()}
+    TF = {k: v.entry.get() for k, v in ToolFrame.active.items()}
 
-    command = "".join([f'{a}{b}' for a,b in zip(chars,TF.values())])
+    command = "".join([f"{a}{b}" for a, b in zip(chars, TF.values())])
     command = f"TF{command}\n"
     response = COM.serial_write(command)
 
@@ -265,7 +381,6 @@ def display_position(response):
         "J9": "R",
     }
 
-
     idxs = [response.find(v) for k, v in responses.items()]
     a = idxs.pop(0)
     for i, (k, v) in enumerate(responses.items()):
@@ -304,8 +419,8 @@ def display_position(response):
     save_pos_data()
 
     if flag != "":
-        print(f'flag: {flag}')
-        print(f'len flag: {len(flag)}')
+        print(f"flag: {flag}")
+        print(f"len flag: {len(flag)}")
         handle_error(flag)
 
     if speed_vio == "1":
@@ -392,7 +507,7 @@ def SaveAndApplyCalibration():
     J8PosCur = J8curAngEntryField.get()
     J9PosCur = J9curAngEntryField.get()
     VisFileLoc = VisFileLocEntryField.get()
-    VisProg = visoptions.get()
+    VisProg = GUI.visoptions.get()
 
     VisOrigXpix = float(VisPicOxPEntryField.get())
     VisOrigXmm = float(VisPicOxMEntryField.get())
@@ -454,10 +569,12 @@ def SaveAndApplyCalibration():
 
 def save_pos_data():
 
-    # i think angular current
-    ang_cur = [None] * 6
-
+    print('no save calibration for now')
+    return
     GUI.calibration.delete(0, tk.END)
+
+    # TODO stop using theme
+    theme = 1
 
     # TODO: clean
     # TODO finish now!
@@ -480,84 +597,54 @@ def save_pos_data():
         #
         *[x.entry.get() for x in ToolFrame.active.values()],
         *[J.gui.entry.get() for J in JointCTRL.external],
-        VisFileLocEntryField.get(),
-        visoptions.get(),
+        EntryField.active["VisFileLoc"].entry.get(),
+        GUI.visoptions.get(),
         #
-        VisPicOxPEntryField.get(),
-        VisPicOxMEntryField.get(),
-        VisPicOyPEntryField.get(),
-        VisPicOyMEntryField.get(),
-        VisPicXPEntryField.get(),
-        VisPicXMEntryField.get(),
-        VisPicYPEntryField.get(),
-        VisPicYMEntryField.get(),
+        EntryField.active["VisPicOxP"].entry.get(),
+        EntryField.active["VisPicOxM"].entry.get(),
+        EntryField.active["VisPicOyP"].entry.get(),
+        EntryField.active["VisPicOyM"].entry.get(),
+        EntryField.active["VisPicXP"].entry.get(),
+        EntryField.active["VisPicXM"].entry.get(),
+        EntryField.active["VisPicYP"].entry.get(),
+        EntryField.active["VisPicYM"].entry.get(),
         #
-        J1calOffEntryField.get(),
-        J2calOffEntryField.get(),
-        J3calOffEntryField.get(),
-        J4calOffEntryField.get(),
-        J5calOffEntryField.get(),
-        J6calOffEntryField.get(),
+        *[J.offset.entry.get() for J in JointCal.main],
+        *[int(J.open_loop.get()) for J in JointCal.main],
         #
-        J1OpenLoopVal,
-        J2OpenLoopVal,
-        J3OpenLoopVal,
-        J4OpenLoopVal,
-        J5OpenLoopVal,
-        J6OpenLoopVal,
-        #
-        com2PortEntryField.get(),
+        COM.arduino.entry.get(),
         theme,
+        *[J.no_autocal.get() for J in JointCal.main],
+        # J7
+        *[x.get() for x in JointCal.active[6].vars.values()],
+        JointCTRL.active[6].angle,
+        *[0 for _ in range(6)],  # calstat2
         #
-        J1CalStatVal,
-        J2CalStatVal,
-        J3CalStatVal,
-        J4CalStatVal,
-        J5CalStatVal,
-        J6CalStatVal,
-        J7axisLimPos,
-        J7rotation,
-        J7steps,
-        J7StepCur,
-        J1CalStatVal2,
-        J2CalStatVal2,
-        J3CalStatVal2,
-        J4CalStatVal2,
-        J5CalStatVal2,
-        J6CalStatVal2,
+        GUI.VisBrightSlide.get(),
+        GUI.VisContrastSlide.get(),
+        EntryField.active["VisBacColor"].entry.get(),
+        EntryField.active["VisScore"].entry.get(),
+        EntryField.active["VisX1Pix"].entry.get(),
+        EntryField.active["VisY1Pix"].entry.get(),
+        EntryField.active["VisX2Pix"].entry.get(),
+        EntryField.active["VisY2Pix"].entry.get(),
+        EntryField.active["VisX1Rob"].entry.get(),
+        EntryField.active["VisY1Rob"].entry.get(),
+        EntryField.active["VisX2Rob"].entry.get(),
+        EntryField.active["VisY2Rob"].entry.get(),
         #
-        VisBrightSlide.get(),
-        VisContrastSlide.get(),
-        VisBacColorEntryField.get(),
-        VisScoreEntryField.get(),
-        VisX1PixEntryField.get(),
-        VisY1PixEntryField.get(),
-        VisX2PixEntryField.get(),
-        VisY2PixEntryField.get(),
-        VisX1RobEntryField.get(),
-        VisY1RobEntryField.get(),
-        VisX2RobEntryField.get(),
-        VisY2RobEntryField.get(),
-        #
-        VisZoomSlide.get(),
-        pick180.get(),
-        pickClosest.get(),
-        visoptions.get(),
+        GUI.VisZoomSlide.get(),
+        GUI.pick180.get(),
+        GUI.pickClosest.get(),
+        GUI.visoptions.get(),
         GUI.full_rot.get(),
-        autoBG.get(),
-        mX1,
-        mY1,
-        mX2,
-        mY2,
-        J8length,
-        J8rotation,
-        J8steps,
-        J9length,
-        J9rotation,
-        J9steps,
-        J7calOffEntryField.get(),
-        J8calOffEntryField.get(),
-        J9calOffEntryField.get(),
+        GUI.autoBG.get(),
+        *[0 for _ in range(4)],  # *[mX1, mY1, mX2, mY2],
+        # J8
+        *[x.get() for x in JointCal.active[7].vars.values()],
+        # J9
+        *[x.get() for x in JointCal.active[8].vars.values()],
+        *[J.offset.entry.get() for J in JointCal.external],
     ]
 
     # TODO why make variables to save in calibrate only to read them again?
@@ -567,7 +654,7 @@ def save_pos_data():
 
     value = GUI.calibration.get(0, tk.END)
     # save to file for the next time it is opened
-    pickle.dump(value, open("ErrorLog", "wb"))
+    pickle.dump(value, open(osp.join(GUI.assets, "ARbot.cal"), "wb"))
 
 
 class SpeedValidator:
@@ -653,13 +740,14 @@ def handle_error(response):
     ##COLLISION ERROR
     elif response[1:2] == "C":
 
+        print(response)
         for i, J in enumerate(JointCTRL.main):
             if response[i + 2 : i + 3] == "1":
                 log_message(f"{J.name} Collision or Motor Error")
-                correctPos()
-                stopProg()
-                message = "Collision or Motor Error - See Log"
-                COM.alarm(message)
+        correctPos()
+        stopProg()
+        message = "Collision or Motor Error - See Log"
+        COM.alarm(message)
 
     ##REACH ERROR
     else:

@@ -14,13 +14,12 @@ class COMPortFrame(ButtonEntry):
     # TODO migrate to frames
 
     def __init__(self, parent, name=None, serial_idx=None):
-        super(COMPortFrame, self).__init__(parent, name)
+        alt = f"{name.upper()} COM PORT"
+        super(COMPortFrame, self).__init__(parent, name, alt=alt)
 
         assert not serial_idx is None
         self.serial_idx = serial_idx
-        self.label = tk.Label(self.frame, text=f"{self.name.upper()} COM PORT:")
         # TODO fix layout
-        self.label.grid(row=1, column=0)
 
     def command(self):
         COM.set(self.serial_idx)
@@ -36,18 +35,25 @@ class COM:
 
     teensy, arduino = None, None
 
-    def __init__(self, start_func):
+    def __init__(self, startup=None):
         print("initiate serial communitation")
 
-        if self.teensy is None:
-            COM.teensy = COMPortFrame(GUI.tabs["2"], name="teensy", serial_idx=0)
-        if self.arduino is None:
-            COM.arduino = COMPortFrame(GUI.tabs["2"], name="arduino", serial_idx=1)
-        COM.startup = start_func
+        COM.startup = startup
+
+    @classmethod
+    def build(cls, parent):
+        """builds gui interface"""
+
+        if COM.teensy is None:
+            COM.teensy = COMPortFrame(parent, name="teensy", serial_idx=0)
+        if COM.arduino is None:
+            COM.arduino = COMPortFrame(parent, name="arduino", serial_idx=1)
 
     @classmethod
     def set(cls, idx=0):
         """set serial communication"""
+
+        assert COM.startup
 
         now = dt.datetime.now().strftime("%B %d %Y - %I:%M%p")
         board = ["TEENSY 4.1 CONTROLLER", "ARDUINO IO BOARD"][idx]
@@ -81,6 +87,7 @@ class COM:
 
             text = f"UNABLE TO ESTABLISH COMMUNICATIONS WITH {board}"
             print(text)
+            raise(ex)
             COM.alarm(text, True)
             log_message(text)
 
@@ -106,10 +113,26 @@ class COM:
         print("command:", command.strip("\n"))
         ser = COM.ser[idx]
 
-        ser.write(command.encode())
-        ser.flushInput()
-        time.sleep(0.2)
-        response = str(ser.readline().strip(), "utf-8")
+        def send_command(ser, command, timeout=0.5):
+            ser.write(command.encode())
+            start_time = time.time()
+            while ser.in_waiting == 0:
+                if time.time() - start_time > timeout:
+                    return None  # No response
+            return ser.readline().strip().decode('utf-8')
+
+        response = send_command(ser,command)
         print("response:", response)
         print()
-        return response
+        return response if response else ''
+
+    @classmethod
+    def close(cls):
+        """docstring"""
+
+        for ser in COM.ser:
+            try:
+                ser.close()
+            except Exception as ex:
+                print(ex)
+

@@ -1,9 +1,9 @@
 import tkinter as tk
+from joint import JointCTRL
 from tkinter import ttk
 
 from gui.base import GUI
-from jog import jog_cmd
-from joint import JointCTRL
+import jog
 
 
 def assign_grid(parent, nrow, ncol):
@@ -38,22 +38,21 @@ class JointFrame:
 
     active = []
 
-    def __init__(self, parent, x, y):
+    def __init__(self, parent):
 
         self.ctrl = JointCTRL(self)
 
-        self.frame = tk.Frame(parent, width=340, height=50)
-        self.frame.grid(row=x, column=y, sticky="nsew")
+        self.frame = ttk.Frame(parent)
 
-        self.entry = tk.Entry(self.frame, width=5)
-        # self.entry.place(x=35, y=9)
-        self.entry.grid(row=0, column=1, sticky="nsew")
+        self.entry = ttk.Entry(self.frame,width=5)
+        self.entry.grid(row=0, column=1,rowspan=2, sticky="nsew")
+
 
         self.locations = {
             "main": dict(row=0, column=0, rowspan=2, sticky="nsew"),
-            "neg": dict(row=0, column=1, sticky="nsew"),
-            "pos": dict(row=0, column=3, sticky="nsew"),
-            "slide": dict(row=0, column=2, sticky="nsew"),
+            "neg": dict(row=0, column=2, sticky="nsew"),
+            "slide": dict(row=0, column=3, sticky="nsew"),
+            "pos": dict(row=0, column=4, sticky="nsew"),
         }
 
         self.mk_labels()
@@ -64,19 +63,21 @@ class JointFrame:
     def mk_buttons(self):
         """makes jogging buttons"""
 
-        button = lambda text: tk.Button(self.frame, text=text, width=3)
+        button = lambda text: ttk.Button(self.frame, text=text, width=3)
         self.buttons = {
             "neg": button("-"),
             "pos": button("+"),
         }
-        for col, (k, button) in zip([1, 3], self.buttons.items()):
-            button.bind("<ButtonRelease>", lambda *args: jog_cmd.stop_jog())
+        for col, (k, button) in zip([2, 4], self.buttons.items()):
+            button.bind("<ButtonRelease>", lambda *args: jog.jog_cmd.stop_jog())
             button.grid(row=1, column=col, sticky="nsew")
 
         self.buttons["neg"].bind(
-            "<ButtonPress>", lambda *args: jog_cmd.joint_jog(self.ctrl.idx, -5)
+            "<ButtonPress>", lambda *args: jog.jog_cmd.joint_jog(self.ctrl.idx, -5)
         )
-        self.buttons["pos"].bind("<ButtonPress>", lambda *args: jog_cmd.joint_jog(self.ctrl.idx, 5))
+        self.buttons["pos"].bind(
+            "<ButtonPress>", lambda *args: jog.jog_cmd.joint_jog(self.ctrl.idx, 5)
+        )
 
     def mk_labels(self):
         """docstring"""
@@ -105,7 +106,7 @@ class JointFrame:
     def mk_slider(self, length):
         """makes slider"""
 
-        self.slider = tk.Scale(
+        self.slider = ttk.Scale(
             self.frame,
             from_=-self.ctrl.limits["neg"],
             to=self.ctrl.limits["pos"],
@@ -114,7 +115,7 @@ class JointFrame:
             command=self.slider_update,
         )
         self.slider.bind("<ButtonRelease-1>", self.slider_execute)
-        self.slider.grid(row=1, column=2, sticky="nsew")
+        self.slider.grid(row=1, column=3, sticky="nsew")
 
     def jog(self):
         """replacement for sel jog"""
@@ -159,7 +160,7 @@ class JointFrame:
 
         self.delta = float(self.entry.get()) - float(self.slider.get())
 
-        jog_cmd.joint_jog(self.ctrl.idx, self.delta)
+        jog.jog_cmd.joint_jog(self.ctrl.idx, self.delta)
         # TODO: fix to be just "jog"
         # func = jogNeg if self.delta < 0 else jogPos
         # func(abs(self.delta))
@@ -170,15 +171,21 @@ class JointFrame:
         self.entry.delete(0, "end")
         self.entry.insert(0, value)
 
+    def grid(self, *args, **kwargs):
+        """docstring"""
+        self.frame.grid(*args, **kwargs)
+
+    def place(self, *args, **kwargs):
+        """docstring"""
+        self.frame.place(*args, **kwargs)
+
 
 class ExtJointFrame(JointFrame):
     """JointFrame for external axis"""
 
-    def __init__(self, parent, x, y):
-        super(ExtJointFrame, self).__init__(parent, x, y)
+    def __init__(self, parent):
+        super(ExtJointFrame, self).__init__(parent)
 
-        self.frame.config(relief="raised")
-        self.frame.grid(row=x, column=y, sticky="nsew")
 
 
 class AxisFrame:
@@ -189,12 +196,11 @@ class AxisFrame:
     main = dict()
     active = dict()
 
-    def __init__(self, parent, x, y, name):
+    def __init__(self, parent, name):
 
-        self.frame = tk.Frame(parent)
-        self.frame.grid(row=x, column=y, sticky="nsew", padx=10, pady=10)
+        self.frame = ttk.Frame(parent)
 
-        self.entry = tk.Entry(self.frame, width=5)
+        self.entry = ttk.Entry(self.frame, width=5)
         self.entry.grid(row=0, column=1, columnspan=2)
 
         self.name = name
@@ -202,13 +208,13 @@ class AxisFrame:
         self.mk_buttons()
 
         font = ("Arial", 18)
-        self.labels = {"main": tk.Label(self.frame, font=font, text=name.upper())}
+        self.labels = {"main": ttk.Label(self.frame, font=font, text=name.upper())}
         self.labels["main"].grid(row=0, column=0, sticky="ew")
         center(self.labels["main"])
 
         # jog commands
-        self.manual = jog_cmd.car_jog
-        self.live = jog_cmd.live_car_jog
+        self.manual = jog.jog_cmd.car_jog
+        self.live = jog.jog_cmd.live_car_jog
 
         AxisFrame.active[name] = self
         if "t" not in name:
@@ -224,13 +230,13 @@ class AxisFrame:
     def mk_buttons(self):
         """makes jogging buttons"""
 
-        button = lambda text: tk.Button(self.frame, text=text, width=3)
+        button = lambda text: ttk.Button(self.frame, text=text, width=3)
         self.buttons = {
             "neg": button("-"),
             "pos": button("+"),
         }
         for k, button in self.buttons.items():
-            button.bind("<ButtonRelease>", jog_cmd.stop_jog)
+            button.bind("<ButtonRelease>", jog.jog_cmd.stop_jog)
         self.buttons["neg"].grid(row=1, column=0)
         self.buttons["pos"].grid(row=1, column=1)
 
@@ -246,6 +252,14 @@ class AxisFrame:
         # TODO why 10?
         response = self.manual(increment, axis=self.name) if use_increment else self.live(10)
 
+    def grid(self, *args, **kwargs):
+        """docstring"""
+        self.frame.grid(*args, **kwargs)
+
+    def place(self, *args, **kwargs):
+        """docstring"""
+        self.frame.place(*args, **kwargs)
+
 
 class ToolFrame(AxisFrame):
     """docstring"""
@@ -256,6 +270,7 @@ class ToolFrame(AxisFrame):
 
         self.manual = None
         self.live = None
+
 
 # NOTE reminder
 """

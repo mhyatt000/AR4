@@ -13,7 +13,7 @@ class ThemeManager:
         self.style = ThemedStyle(self.root)
         self.colors = {
             "light": ["red", "dark orange", "green", "dark blue", "black"],
-            "dark": ["IndianRed1", "orange", "light green", "light blue", "white"],
+            "dark": ["IndianRed1", "orange", "light green", "light blue", "keramik"],
         }
 
     @classmethod
@@ -35,7 +35,7 @@ class ThemeManager:
                 "Warn.TLabel": 1,
                 "OK.TLabel": 2,
                 "Jointlim.TLabel": 3,
-                "Frame1.TFrame": 4,
+                "Frame.TFrame": 4,
         }
 
         for  widget,i in widgets.items():
@@ -46,10 +46,6 @@ class ThemeManager:
 
     def dark_theme(self):
         self.set_theme(mode="dark")
-
-
-
-theme = 1
 
 
 def set_theme(root, mode="light"):
@@ -66,8 +62,8 @@ def set_theme(root, mode="light"):
 
     font = ("Arial", "10", "bold")
     colors = {
-        "light": ["red", "dark orange", "green", "dark blue", "black"],
-        "dark": ["IndianRed1", "orange", "light green", "light blue", "white"],
+        "light": ["red", "dark orange", "green", "dark blue", "keramik"],
+        "dark": ["IndianRed1", "orange", "light green", "light blue", "keramik"],
     }
     colors = colors[mode]
 
@@ -77,8 +73,10 @@ def set_theme(root, mode="light"):
     style.configure("Warn.TLabel", foreground=colors[1], font=font)
     style.configure("OK.TLabel", foreground=colors[2], font=font)
     style.configure("Jointlim.TLabel", foreground=colors[3], font=font)
-    style.configure("Frame1.TFrame", background=colors[4])
+    style.configure("TFrame", background=colors[4])
+    style.configure("TLabel", background=colors[4])
 
+    style.configure("TFrame", bordercolor='red')
 
 def light_theme(root):
     set_theme(root, mode="light")

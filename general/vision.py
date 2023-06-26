@@ -237,7 +237,7 @@ def checkAutoBG(autoBG, VisBacColorEntryField):
 
 
 def testvis():
-    visprog = visoptions.get()
+    visprog = GUI.visoptions.get()
     if visprog[:] == "Openvision":
         openvision()
     if visprog[:] == "Roborealm 1.7.5":
@@ -437,10 +437,10 @@ def start_vid():
     global cap
     stop_vid()
     cam_on = True
-    curVisStingSel = visoptions.get()
+    curVisStingSel = GUI.visoptions.get()
     l = len(camList)
     for i in range(l):
-        if visoptions.get() == camList[i]:
+        if GUI.visoptions.get() == camList[i]:
             selectedCam = i
     cap = cv2.VideoCapture(selectedCam)
     show_frame()
@@ -469,10 +469,10 @@ def take_pic():
     if cam_on == True:
         ret, frame = cap.read()
     else:
-        curVisStingSel = visoptions.get()
+        curVisStingSel = GUI.visoptions.get()
         l = len(camList)
         for i in range(l):
-            if visoptions.get() == camList[i]:
+            if GUI.visoptions.get() == camList[i]:
                 selectedCam = i
                 # print(selectedCam)
         cap = cv2.VideoCapture(selectedCam)
@@ -554,10 +554,10 @@ def mask_pic():
     if cam_on == True:
         ret, frame = cap.read()
     else:
-        curVisStingSel = visoptions.get()
+        curVisStingSel = GUI.visoptions.get()
         l = len(camList)
         for i in range(l):
-            if visoptions.get() == camList[i]:
+            if GUI.visoptions.get() == camList[i]:
                 selectedCam = i
                 # print(selectedCam)
         cap = cv2.VideoCapture(selectedCam)
