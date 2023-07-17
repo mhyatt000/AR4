@@ -12,7 +12,7 @@ def on_closing():
 
     try:
         command = "CL"
-        COM.serial_write(command.encode())
+        COM.quick_write(command)
     except Exception as ex:
         print(ex)
 

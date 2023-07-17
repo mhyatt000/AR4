@@ -30,7 +30,7 @@ def build_header(header):
 def build_left(left):
     """docstring"""
 
-    autoCalBut = ttk.Button(left, text="Auto Calibrate Selected", command=calibrate.calRobotAll)
+    autoCalBut = ttk.Button(left, text="Auto Calibrate Selected", command=calibrate.cal_all)
 
     J7zerobut = ttk.Button(left, text="Set Axis 7 Calibration to Zero", command=calibrate.zeroAxis7)
     J8zerobut = ttk.Button(left, text="Set Axis 8 Calibration to Zero", command=calibrate.zeroAxis8)

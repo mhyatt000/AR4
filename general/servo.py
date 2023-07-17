@@ -33,7 +33,7 @@ class Servo():
         load.save_cfg()
         servoPos = obj.entry.get()
         command = f"SV0P{servoPos}\n"
-        COM.serial_write(command, serial_idx=1)
+        COM.write(command, serial_idx=1)
 
 
 
@@ -68,7 +68,7 @@ class DO():
 
         value = obj.entry.get()
         command = f'{"ONX" if on else "OFX"}{val}\n'
-        COM.serial_write(command, serial_idx=1)
+        COM.write(command, serial_idx=1)
 
 
 

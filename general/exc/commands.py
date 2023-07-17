@@ -47,7 +47,7 @@ def read_encoders():
     EntryField.active['cmd_sent'].entry.delete(0, "end")
     EntryField.active['cmd_sent'].entry.insert(0, command)
 
-    response = COM.serial_write(command)
+    response = COM.write(command)
 
     # TODO bring back
     # manEntryField.delete(0, "end")
@@ -61,7 +61,7 @@ def test_limit_switch():
         # moveInProc == 2
 
     command = "TL\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
 
     # manEntryField.delete(0, "end")
     # manEntryField.insert(0, response)

@@ -52,11 +52,13 @@ def build_fields(fields):
     EntryField(fields, name="curRow")
     EntryField(fields, name="man")
     EntryField(fields, name="prog")
+
     EntryField(fields, name="speed")
     EntryField(fields, name="ACCspeed", alt="Acceleration (%)")
     EntryField(fields, name="DECspeed", alt="Decceleration (%)")
     EntryField(fields, name="ACCramp", alt="Acceleration Ramp (%)")
     EntryField(fields, name="round", alt="Rounding (mm)")
+
     EntryField(fields, name="savepos")
 
     EntryField(fields, name="waitTime")

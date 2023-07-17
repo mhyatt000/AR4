@@ -69,7 +69,7 @@ class COM:
 
         try:
             port = "/dev/cu.usbmodem123843001"
-            COM.ser[idx] = serial.Serial(port, baud)  # , timeout=2)
+            COM.ser[idx] = serial.Serial(port, baud, timeout=10)  # , timeout=2)
 
             text = f"COMMUNICATIONS STARTED WITH {board}"
 
@@ -107,32 +107,43 @@ class COM:
             alm.config(text=text, style=style)
 
     @classmethod
-    def serial_write(cls, command, idx=0):
-        """send message to serial port"""
+    def write(cls, command, idx=0):
+        """docstring"""
 
         print("command:", command.strip("\n"))
         ser = COM.ser[idx]
 
-        def send_command(ser, command, timeout=60):
-            ser.write(command.encode())
-            start_time = time.time()
-            while ser.in_waiting == 0:
-                if time.time() - start_time > timeout:
-                    return None  # No response
-            return ser.readline().strip().decode('utf-8')
+        ser.write(command.encode())
+        ser.flush()
+        response = ser.readline().strip().decode('utf-8') or ''
 
-        response = send_command(ser,command)
-        print("response:", response)
+        print("response:", response or None)
         print()
-        return response if response else ''
+        return response
+
+
+    @classmethod
+    def quick_write(cls,command, idx=0):
+        """doesnt wait for a response"""
+
+        print("command:", command.strip("\n"))
+        ser = COM.ser[idx]
+
+        ser.write(command.encode())
+        ser.flush()
+        print()
+        return ''
+
 
     @classmethod
     def close(cls):
         """docstring"""
 
-        for ser in COM.ser:
+        print()
+        for i, ser in enumerate(COM.ser):
             try:
                 ser.close()
+                print(f'closed {ser.port}')
             except Exception as ex:
-                print(ex)
+                pass
 

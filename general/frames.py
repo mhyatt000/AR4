@@ -44,14 +44,13 @@ class JointFrame:
 
         self.frame = ttk.Frame(parent)
 
-        self.entry = ttk.Entry(self.frame,width=5)
+        self.entry = ttk.Entry(self.frame,width=8)
         self.entry.grid(row=0, column=1,rowspan=2, sticky="nsew")
-
 
         self.locations = {
             "main": dict(row=0, column=0, rowspan=2, sticky="nsew"),
             "neg": dict(row=0, column=2, sticky="nsew"),
-            "slide": dict(row=0, column=3, sticky="nsew"),
+            "slider": dict(row=0, column=3, sticky="nsew"),
             "pos": dict(row=0, column=4, sticky="nsew"),
         }
 
@@ -96,7 +95,7 @@ class JointFrame:
                 text=str(self.ctrl.limits["pos"]),
                 style="Jointlim.TLabel",
             ),
-            "slide": ttk.Label(self.frame),
+            "slider": ttk.Label(self.frame),
         }
 
         for k, label in self.labels.items():
@@ -153,12 +152,17 @@ class JointFrame:
         """docstring"""
 
         text = round(float(self.slider.get()), 2)
-        self.labels["slide"].config(text=text)
+        self.labels["slider"].config(text=text)
 
-    def slider_execute(foo):
+    def slider_execute(self, *args):
         """docstring"""
+        old = float(self.entry.get())
+        new = float(self.slider.get())
+        self.delta = new - old
 
-        self.delta = float(self.entry.get()) - float(self.slider.get())
+        print(f'{self.ctrl.name} slider execute')
+        print(f'entry: {self.entry.get()} | slider: {self.slider.get()}')
+        print(f'delta: {self.delta}', '\n')
 
         jog.jog_cmd.joint_jog(self.ctrl.idx, self.delta)
         # TODO: fix to be just "jog"

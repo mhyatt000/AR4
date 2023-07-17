@@ -1,187 +1,33 @@
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//DRIVE MOTORS J
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, int J6step, int J7step, int J8step, int J9step, int J1dir, int J2dir, int J3dir, int J4dir, int J5dir, int J6dir, int J7dir, int J8dir, int J9dir, String SpeedType, float SpeedVal, float ACCspd, float DCCspd, float ACCramp) {
+void driveMotorsJ(int[] steps, int[] dirs, String SpeedType, float SpeedVal, float ACCspd, float DCCspd, float ACCramp) {
 
   //FIND HIGHEST STEP
-  int HighStep = J1step;
-  if (J2step > HighStep)
-  {
-    HighStep = J2step;
-  }
-  if (J3step > HighStep)
-  {
-    HighStep = J3step;
-  }
-  if (J4step > HighStep)
-  {
-    HighStep = J4step;
-  }
-  if (J5step > HighStep)
-  {
-    HighStep = J5step;
-  }
-  if (J6step > HighStep)
-  {
-    HighStep = J6step;
-  }
-  if (J7step > HighStep)
-  {
-    HighStep = J7step;
-  }
-  if (J8step > HighStep)
-  {
-    HighStep = J8step;
-  }
-  if (J9step > HighStep)
-  {
-    HighStep = J9step;
+  int highest = steps[0];
+  for (int i = 0; i < 9; i++) {
+    highest = steps[i] > highest ? steps[i] : highest;
   }
 
   //FIND ACTIVE JOINTS
-  int J1active = 0;
-  int J2active = 0;
-  int J3active = 0;
-  int J4active = 0;
-  int J5active = 0;
-  int J6active = 0;
-  int J7active = 0;
-  int J8active = 0;
-  int J9active = 0;
-  int Jactive = 0;
+  int actives[9] = {0};
+  for (int i = 0; i < 9; i++) {
+      actives[i] = steps[i] >= 1 ? 1 : 0;
+  }
 
-  if (J1step >= 1)
-  {
-    J1active = 1;
+  int total_active = 0; 
+  for (int i = 0; i < 9; i++) {
+      total_active += actives[i];
   }
-  if (J2step >= 1)
-  {
-    J2active = 1;
-  }
-  if (J3step >= 1)
-  {
-    J3active = 1;
-  }
-  if (J4step >= 1)
-  {
-    J4active = 1;
-  }
-  if (J5step >= 1)
-  {
-    J5active = 1;
-  }
-  if (J6step >= 1)
-  {
-    J6active = 1;
-  }
-  if (J7step >= 1)
-  {
-    J7active = 1;
-  }
-  if (J8step >= 1)
-  {
-    J8active = 1;
-  }
-  if (J9step >= 1)
-  {
-    J9active = 1;
-  }
-  Jactive = (J1active + J2active + J3active + J4active + J5active + J6active + J7active + J8active + J9active);
 
-  int J1_PE = 0;
-  int J2_PE = 0;
-  int J3_PE = 0;
-  int J4_PE = 0;
-  int J5_PE = 0;
-  int J6_PE = 0;
-  int J7_PE = 0;
-  int J8_PE = 0;
-  int J9_PE = 0;
-
-  int J1_SE_1 = 0;
-  int J2_SE_1 = 0;
-  int J3_SE_1 = 0;
-  int J4_SE_1 = 0;
-  int J5_SE_1 = 0;
-  int J6_SE_1 = 0;
-  int J7_SE_1 = 0;
-  int J8_SE_1 = 0;
-  int J9_SE_1 = 0;
-
-  int J1_SE_2 = 0;
-  int J2_SE_2 = 0;
-  int J3_SE_2 = 0;
-  int J4_SE_2 = 0;
-  int J5_SE_2 = 0;
-  int J6_SE_2 = 0;
-  int J7_SE_2 = 0;
-  int J8_SE_2 = 0;
-  int J9_SE_2 = 0;
-
-  int J1_LO_1 = 0;
-  int J2_LO_1 = 0;
-  int J3_LO_1 = 0;
-  int J4_LO_1 = 0;
-  int J5_LO_1 = 0;
-  int J6_LO_1 = 0;
-  int J7_LO_1 = 0;
-  int J8_LO_1 = 0;
-  int J9_LO_1 = 0;
-
-  int J1_LO_2 = 0;
-  int J2_LO_2 = 0;
-  int J3_LO_2 = 0;
-  int J4_LO_2 = 0;
-  int J5_LO_2 = 0;
-  int J6_LO_2 = 0;
-  int J7_LO_2 = 0;
-  int J8_LO_2 = 0;
-  int J9_LO_2 = 0;
+  int PE[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int SE_1[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int SE_2[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int LO_1[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int LO_2[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   //reset
-  int J1cur = 0;
-  int J2cur = 0;
-  int J3cur = 0;
-  int J4cur = 0;
-  int J5cur = 0;
-  int J6cur = 0;
-  int J7cur = 0;
-  int J8cur = 0;
-  int J9cur = 0;
-
-  int J1_PEcur = 0;
-  int J2_PEcur = 0;
-  int J3_PEcur = 0;
-  int J4_PEcur = 0;
-  int J5_PEcur = 0;
-  int J6_PEcur = 0;
-  int J7_PEcur = 0;
-  int J8_PEcur = 0;
-  int J9_PEcur = 0;
-
-  int J1_SE_1cur = 0;
-  int J2_SE_1cur = 0;
-  int J3_SE_1cur = 0;
-  int J4_SE_1cur = 0;
-  int J5_SE_1cur = 0;
-  int J6_SE_1cur = 0;
-  int J7_SE_1cur = 0;
-  int J8_SE_1cur = 0;
-  int J9_SE_1cur = 0;
-
-  int J1_SE_2cur = 0;
-  int J2_SE_2cur = 0;
-  int J3_SE_2cur = 0;
-  int J4_SE_2cur = 0;
-  int J5_SE_2cur = 0;
-  int J6_SE_2cur = 0;
-  int J7_SE_2cur = 0;
-  int J8_SE_2cur = 0;
-  int J9_SE_2cur = 0;
+  int cur[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int PEcur[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int SE_1cur[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int SE_2cur[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   int highStepCur = 0;
   float curDelay = 0;
@@ -189,89 +35,27 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
   float speedSP;
   float moveDist;
 
-  //int J4EncSteps;
-
   //SET DIRECTIONS
-
-  /// J1 ///
-  if (J1dir) {
-    digitalWrite(J1dirPin, HIGH);
-  }
-  else {
-    digitalWrite(J1dirPin, LOW);
-  }
-  /// J2 ///
-  if (J2dir) {
-    digitalWrite(J2dirPin, LOW);
-  }
-  else {
-    digitalWrite(J2dirPin, HIGH);
-  }
-  /// J3 ///
-  if (J3dir) {
-    digitalWrite(J3dirPin, LOW);
-  }
-  else {
-    digitalWrite(J3dirPin, HIGH);
-  }
-  /// J4 ///
-  if (J4dir) {
-    digitalWrite(J4dirPin, HIGH);
-  }
-  else {
-    digitalWrite(J4dirPin, LOW);
-  }
-  /// J5 ///
-  if (J5dir) {
-    digitalWrite(J5dirPin, LOW);
-  }
-  else {
-    digitalWrite(J5dirPin, HIGH);
-  }
-  /// J6 ///
-  if (J6dir) {
-    digitalWrite(J6dirPin, LOW);
-  }
-  else {
-    digitalWrite(J6dirPin, HIGH);
-  }
-  /// J7 ///
-  if (J7dir) {
-    digitalWrite(J7dirPin, HIGH);
-  }
-  else {
-    digitalWrite(J7dirPin, LOW);
-  }
-  /// J8 ///
-  if (J8dir) {
-    digitalWrite(J8dirPin, HIGH);
-  }
-  else {
-    digitalWrite(J8dirPin, LOW);
-  }
-  /// J9 ///
-  if (J9dir) {
-    digitalWrite(J9dirPin, HIGH);
-  }
-  else {
-    digitalWrite(J9dirPin, LOW);
+  for (int i=0; i < 9; i++ ) {
+    if (dirs[i]) { digitalWrite(dirpins[i], HIGH); }
+    else { digitalWrite(dirpins[i], HIGH); }
   }
 
   /////CALC SPEEDS//////
   float calcStepGap;
 
   //determine steps
-  float ACCStep = HighStep * (ACCspd / 100);
-  float NORStep = HighStep * ((100 - ACCspd - DCCspd) / 100);
-  float DCCStep = HighStep * (DCCspd / 100);
+  float ACCStep = highest * (ACCspd / 100);
+  float NORStep = highest * ((100 - ACCspd - DCCspd) / 100);
+  float DCCStep = highest * (DCCspd / 100);
 
   //set speed for seconds or mm per sec
-  if (SpeedType == "s") {
-    speedSP = (SpeedVal * 1000000) * .8;
+  if (SpeedType == "s") { 
+    speedSP = (SpeedVal * 1000000) * 0.8; 
   }
   else if (SpeedType == "m") {
     lineDist = pow((pow((xyzuvw_In[0] - xyzuvw_Out[0]), 2) + pow((xyzuvw_In[1] - xyzuvw_Out[1]), 2) + pow((xyzuvw_In[2] - xyzuvw_Out[2]), 2)), .5);
-    speedSP = ((lineDist / SpeedVal) * 1000000) * .8;
+    speedSP = ((lineDist / SpeedVal) * 1000000) * 0.8;
   }
 
   //calc step gap for seconds or mm per sec
@@ -284,6 +68,7 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
     float zeroDCCtime = ((DCCStep) * zeroStepGap) + ((DCCStep - 9) * (((DCCStep) * (zeroDCCstepInc / 2))));
     float zeroTOTtime = zeroACCtime + zeroNORtime + zeroDCCtime;
     float overclockPerc = speedSP / zeroTOTtime;
+
     calcStepGap = zeroStepGap * overclockPerc;
     if (calcStepGap <= minSpeedDelay) {
       calcStepGap = minSpeedDelay;
@@ -328,14 +113,8 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
       curDelay = calcStepGap;
     }
 
-
-
-    float distDelay = 60;
-    if (debugg == 1) {
-      distDelay = 0;
-    }
+    float distDelay = debugg == 1 ? 0 : 60;
     float disDelayCur = 0;
-
 
     /////// J1 ////////////////////////////////
     ///find pulse every
@@ -345,50 +124,30 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
       ///find left over 1
       J1_LO_1 = (HighStep - (J1step * J1_PE));
       ///find skip 1
-      if (J1_LO_1 > 0)
-      {
-        J1_SE_1 = (HighStep / J1_LO_1);
-      }
-      else
-      {
-        J1_SE_1 = 0;
-      }
+      if (J1_LO_1 > 0) { J1_SE_1 = (HighStep / J1_LO_1); }
+      else { J1_SE_1 = 0; }
       ///find left over 2
-      if (J1_SE_1 > 0)
-      {
+      if (J1_SE_1 > 0) {
         J1_LO_2 = HighStep - ((J1step * J1_PE) + ((J1step * J1_PE) / J1_SE_1));
       }
-      else
-      {
-        J1_LO_2 = 0;
-      }
+      else { J1_LO_2 = 0; }
       ///find skip 2
-      if (J1_LO_2 > 0)
-      {
+      if (J1_LO_2 > 0) {
         J1_SE_2 = (HighStep / J1_LO_2);
       }
-      else
-      {
-        J1_SE_2 = 0;
-      }
+      else { J1_SE_2 = 0; }
+
       /////////  J1  ///////////////
-      if (J1_SE_2 == 0)
-      {
-        J1_SE_2cur = (J1_SE_2 + 1);
-      }
-      if (J1_SE_2cur != J1_SE_2)
-      {
+      if (J1_SE_2 == 0) { J1_SE_2cur = (J1_SE_2 + 1); }
+      if (J1_SE_2cur != J1_SE_2) {
         J1_SE_2cur = ++J1_SE_2cur;
-        if (J1_SE_1 == 0)
-        {
+        if (J1_SE_1 == 0) {
           J1_SE_1cur = (J1_SE_1 + 1);
         }
-        if (J1_SE_1cur != J1_SE_1)
-        {
+        if (J1_SE_1cur != J1_SE_1) {
           J1_SE_1cur = ++J1_SE_1cur;
           J1_PEcur = ++J1_PEcur;
-          if (J1_PEcur == J1_PE)
-          {
+          if (J1_PEcur == J1_PE) {
             J1cur = ++J1cur;
             J1_PEcur = 0;
             digitalWrite(J1stepPin, LOW);
@@ -397,20 +156,12 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
             if (J1dir == 0) {
               J1StepM == --J1StepM;
             }
-            else {
-              J1StepM == ++J1StepM;
-            }
+            else { J1StepM == ++J1StepM; }
           }
         }
-        else
-        {
-          J1_SE_1cur = 0;
-        }
+        else { J1_SE_1cur = 0; }
       }
-      else
-      {
-        J1_SE_2cur = 0;
-      }
+      else { J1_SE_2cur = 0; }
     }
 
 
@@ -1033,6 +784,7 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
 
     // inc cur step
     highStepCur = ++highStepCur;
+
     digitalWrite(J1stepPin, HIGH);
     digitalWrite(J2stepPin, HIGH);
     digitalWrite(J3stepPin, HIGH);
@@ -1051,3 +803,168 @@ void driveMotorsJ(int J1step, int J2step, int J3step, int J4step, int J5step, in
   rndSpeed = curDelay;
 }
 
+
+void rj(){
+
+    if (function == "RJ") {
+
+      int[9] dirpins;
+      int[9] faults;
+      int total_fault;
+
+      int J1stepStart = inData.indexOf("A");
+      int J2stepStart = inData.indexOf("B");
+      int J3stepStart = inData.indexOf("C");
+      int J4stepStart = inData.indexOf("D");
+      int J5stepStart = inData.indexOf("E");
+      int J6stepStart = inData.indexOf("F");
+
+      int J7Start = inData.indexOf("J7");
+      int J8Start = inData.indexOf("J8");
+      int J9Start = inData.indexOf("J9");
+      int SPstart = inData.indexOf("S");
+      int AcStart = inData.indexOf("Ac");
+      int DcStart = inData.indexOf("Dc");
+      int RmStart = inData.indexOf("Rm");
+
+      int WristConStart = inData.indexOf("W");
+      int LoopModeStart = inData.indexOf("Lm");
+
+      float[6] angles;
+
+      J1Angle = inData.substring(J1stepStart + 1, J2stepStart).toFloat();
+      J2Angle = inData.substring(J2stepStart + 1, J3stepStart).toFloat();
+      J3Angle = inData.substring(J3stepStart + 1, J4stepStart).toFloat();
+      J4Angle = inData.substring(J4stepStart + 1, J5stepStart).toFloat();
+      J5Angle = inData.substring(J5stepStart + 1, J6stepStart).toFloat();
+      J6Angle = inData.substring(J6stepStart + 1, J7Start).toFloat();
+
+      J7_In = inData.substring(J7Start + 2, J8Start).toFloat();
+      J8_In = inData.substring(J8Start + 2, J9Start).toFloat();
+      J9_In = inData.substring(J9Start + 2, SPstart).toFloat();
+
+      String SpeedType = inData.substring(SPstart + 1, SPstart + 2);
+      float SpeedVal = inData.substring(SPstart + 2, AcStart).toFloat();
+      float ACCspd = inData.substring(AcStart + 2, DcStart).toFloat();
+      float DCCspd = inData.substring(DcStart + 2, RmStart).toFloat();
+      float ACCramp = inData.substring(RmStart + 2, WristConStart).toFloat();
+
+      String WristCon = inData.substring(WristConStart + 1, LoopModeStart);
+      String LoopMode = inData.substring(LoopModeStart + 2);
+
+      LoopMode.trim();
+
+      J1LoopMode = LoopMode.substring(0, 1).toInt();
+      J2LoopMode = LoopMode.substring(1, 2).toInt();
+      J3LoopMode = LoopMode.substring(2, 3).toInt();
+      J4LoopMode = LoopMode.substring(3, 4).toInt();
+      J5LoopMode = LoopMode.substring(4, 5).toInt();
+      J6LoopMode = LoopMode.substring(5).toInt();
+
+      int J1futStepM = (J1Angle + J1axisLimNeg) * J1StepDeg;
+      int J2futStepM = (J2Angle + J2axisLimNeg) * J2StepDeg;
+      int J3futStepM = (J3Angle + J3axisLimNeg) * J3StepDeg;
+      int J4futStepM = (J4Angle + J4axisLimNeg) * J4StepDeg;
+      int J5futStepM = (J5Angle + J5axisLimNeg) * J5StepDeg;
+      int J6futStepM = (J6Angle + J6axisLimNeg) * J6StepDeg;
+      int J7futStepM = (J7_In + J7axisLimNeg) * J7StepDeg;
+      int J8futStepM = (J8_In + J8axisLimNeg) * J8StepDeg;
+      int J9futStepM = (J9_In + J9axisLimNeg) * J9StepDeg;
+
+      //calc delta from current to destination
+      int J1stepDif = J1StepM - J1futStepM;
+      int J2stepDif = J2StepM - J2futStepM;
+      int J3stepDif = J3StepM - J3futStepM;
+      int J4stepDif = J4StepM - J4futStepM;
+      int J5stepDif = J5StepM - J5futStepM;
+      int J6stepDif = J6StepM - J6futStepM;
+      int J7stepDif = J7StepM - J7futStepM;
+      int J8stepDif = J8StepM - J8futStepM;
+      int J9stepDif = J9StepM - J9futStepM;
+
+
+      //determine motor directions
+      if (J1stepDif <= 0) { J1dir = 1; }
+      else { J1dir = 0; }
+
+      if (J2stepDif <= 0) { J2dir = 1; }
+      else { J2dir = 0; }
+
+      if (J3stepDif <= 0) { J3dir = 1; }
+      else { J3dir = 0; }
+
+      if (J4stepDif <= 0) { J4dir = 1; }
+      else { J4dir = 0; }
+
+      if (J5stepDif <= 0) { J5dir = 1; }
+      else { J5dir = 0; }
+
+      if (J6stepDif <= 0) { J6dir = 1; }
+      else { J6dir = 0; }
+
+      if (J7stepDif <= 0) { J7dir = 1; }
+      else { J7dir = 0; }
+
+      if (J8stepDif <= 0) { J8dir = 1; }
+      else { J8dir = 0; }
+
+      if (J9stepDif <= 0) { J9dir = 1; }
+      else { J9dir = 0; }
+
+
+      //determine if requested position is within axis limits
+      if ((J1dir == 1 and (J1StepM + J1stepDif > J1StepLim)) or (J1dir == 0 and (J1StepM - J1stepDif < 0))) {
+        J1axisFault = 1;
+      }
+      if ((J2dir == 1 and (J2StepM + J2stepDif > J2StepLim)) or (J2dir == 0 and (J2StepM - J2stepDif < 0))) {
+        J2axisFault = 1;
+      }
+      if ((J3dir == 1 and (J3StepM + J3stepDif > J3StepLim)) or (J3dir == 0 and (J3StepM - J3stepDif < 0))) {
+        J3axisFault = 1;
+      }
+      if ((J4dir == 1 and (J4StepM + J4stepDif > J4StepLim)) or (J4dir == 0 and (J4StepM - J4stepDif < 0))) {
+        J4axisFault = 1;
+      }
+      if ((J5dir == 1 and (J5StepM + J5stepDif > J5StepLim)) or (J5dir == 0 and (J5StepM - J5stepDif < 0))) {
+        J5axisFault = 1;
+      }
+      if ((J6dir == 1 and (J6StepM + J6stepDif > J6StepLim)) or (J6dir == 0 and (J6StepM - J6stepDif < 0))) {
+        J6axisFault = 1;
+      }
+      if ((J7dir == 1 and (J7StepM + J7stepDif > J7StepLim)) or (J7dir == 0 and (J7StepM - J7stepDif < 0))) {
+        J7axisFault = 1;
+      }
+      if ((J8dir == 1 and (J8StepM + J8stepDif > J8StepLim)) or (J8dir == 0 and (J8StepM - J8stepDif < 0))) {
+        J8axisFault = 1;
+      }
+      if ((J9dir == 1 and (J9StepM + J9stepDif > J9StepLim)) or (J9dir == 0 and (J9StepM - J9stepDif < 0))) {
+        J9axisFault = 1;
+      }
+      TotalAxisFault = J1axisFault + J2axisFault + J3axisFault + J4axisFault + J5axisFault + J6axisFault + J7axisFault + J8axisFault + J9axisFault;
+
+      //send move command if no axis limit error
+      if (TotalAxisFault == 0 && KinematicError == 0) {
+        resetEncoders();
+        driveMotorsJ(abs(J1stepDif), abs(J2stepDif), abs(J3stepDif), abs(J4stepDif), abs(J5stepDif), abs(J6stepDif), abs(J7stepDif), abs(J8stepDif), abs(J9stepDif), J1dir, J2dir, J3dir, J4dir, J5dir, J6dir, J7dir, J8dir, J9dir, SpeedType, SpeedVal, ACCspd, DCCspd, ACCramp);
+        checkEncoders();
+        sendRobotPos();
+      }
+
+      else if (KinematicError == 1) {
+        Alarm = "ER";
+        delay(5);
+        Serial.println(Alarm);
+      }
+
+      else {
+        Alarm = "EL" + String(J1axisFault) + String(J2axisFault) + String(J3axisFault) + String(J4axisFault) + String(J5axisFault) + String(J6axisFault) + String(J7axisFault) + String(J8axisFault) + String(J9axisFault);
+        delay(5);
+        Serial.println(Alarm);
+      }
+
+
+      inData = ""; // Clear recieved buffer
+      ////////MOVE COMPLETE///////////
+
+    }
+}

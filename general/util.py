@@ -46,3 +46,11 @@ def hgrid(parent, depth=1, **kwargs):
     for i, widget in enumerate(parent.winfo_children()):
         widget.grid(row=i % depth, column=i // depth, sticky='', **kwargs)
     center(parent)
+
+
+def display(entry, value=""):
+    """delete entry contents and insert value"""
+
+    entry.delete(0, "end")
+    entry.insert(0, value)
+

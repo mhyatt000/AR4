@@ -1,4 +1,5 @@
 import calibrate
+import load
 from gui.base import EntryField
 from com import COM
 from gui.base import GUI
@@ -39,7 +40,6 @@ def serial_err_handle(response):
         print('handle')
         handle_error(response)
     else:
-        print('display pos')
         calibrate.display_position(response)
 
 
@@ -92,8 +92,10 @@ def joint_jog(joint, value):
     # TODO add in
     record_command(command)
 
-    response = COM.serial_write(command)
+    response = COM.write(command)
     serial_err_handle(response)
+    load.save_cfg()
+    load.load_cfg()
 
 
 def LiveJointJog(value):
@@ -115,7 +117,7 @@ def stop_jog():
     command = "S\n"
     is_increment = int(GUI.is_increment.get())
     if not is_increment:
-        response = COM.serial_write(command)
+        response = COM.quick_write(command)
         serial_err_handle(response)
 
 
@@ -148,7 +150,7 @@ def car_jog(value, axis):
         f"{speedPrefix}{Speed}Ac{ACCspd}Dc{DECspd}Rm{ACCramp}W{WC}Lm{loopmode}\n"
     )
 
-    response = COM.serial_write(command)
+    response = COM.write(command)
     serial_err_handle(response)
 
 

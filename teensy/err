@@ -1,0 +1,20 @@
+running main
+running main
+July 09 2023 - 07:29PM
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/serial/serialposix.py", line 575, in read
+    buf = os.read(self.fd, size - len(read))
+OSError: [Errno 6] Device not configured
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/matthewhyatt/cs/ar4/teensy/debug.py", line 76, in <module>
+    main()
+  File "/Users/matthewhyatt/cs/ar4/teensy/debug.py", line 67, in main
+    read(ser)
+  File "/Users/matthewhyatt/cs/ar4/teensy/debug.py", line 21, in read
+    response = ser.readline().strip().decode("utf-8") or ""
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/serial/serialposix.py", line 581, in read
+    raise SerialException('read failed: {}'.format(e))
+serial.serialutil.SerialException: read failed: [Errno 6] Device not configured

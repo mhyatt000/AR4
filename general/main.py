@@ -86,9 +86,8 @@ def main():
 
     GUI.use_xbox = 0
 
-
     COM(startup)
-    load.load_presets()
+    load.load_cfg()
 
     COM.set()
 
@@ -104,4 +103,10 @@ def main():
     GUI.tabs["1"].mainloop()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as ex:
+        raise ex
+        print(ex)
+        load.save_cfg()
+        COM.close()

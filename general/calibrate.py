@@ -1,18 +1,19 @@
 import datetime
-import load
-import tkinter.ttk as ttk
-import util
 import os.path as osp
 import pickle
 from pprint import pprint
+import string
 import tkinter as tk
+import tkinter.ttk as ttk
 
 from com import COM
 from frames import AxisFrame  # make so its the same pattern as joint
 from frames import ToolFrame
 from gui.base import GUI, EntryField
-from joint import  JointCTRL
+from joint import JointCTRL
+import load
 from servo import DO, Servo
+import util
 
 
 class JointCal:
@@ -33,8 +34,11 @@ class JointCal:
         self.frame = ttk.Frame(parent)
         self.frame.grid(row=self.idx, column=0, pady=10)
 
-        self.open_loop = tk.IntVar()
-        self.no_autocal = tk.IntVar()
+        self.vars = {
+            "autocal": tk.IntVar(),
+            "openloop": tk.IntVar(),
+            "offset": tk.IntVar(),
+        }
 
         self.mk_sf()
         self.mk_buttons()
@@ -55,17 +59,16 @@ class JointCal:
 
         self.sf = ttk.Frame(self.frame)
 
-
     def mk_buttons(self):
         """docstring"""
 
         self.buttons = {
-            "autocal": ttk.Checkbutton(self.sf, text=self.name, variable=self.no_autocal),
+            "autocal": ttk.Checkbutton(self.sf, text=self.name, variable=self.vars["autocal"]),
             "cal": ttk.Button(
                 self.sf, text=f"Calibrate {self.name} Only", command=lambda: cal_joint(self.idx)
             ),
             "open_loop": ttk.Checkbutton(
-                self.sf, text=f"{self.name} Open Loop", variable=self.open_loop
+                self.sf, text=f"{self.name} Open Loop", variable=self.vars["openloop"]
             ),
         }
 
@@ -83,10 +86,10 @@ class ExtJointCal(JointCal):
         self.mk_zero()
         util.vgrid(self.frame)
 
-        self.vars = {
-            'length' : tk.IntVar(),
-            'rotation' : tk.IntVar(),
-            'steps' : tk.IntVar(),
+        self.extvars = {
+            "length": tk.IntVar(),
+            "rotation": tk.IntVar(),
+            "steps": tk.IntVar(),
         }
 
     def mk_specs(self):
@@ -105,7 +108,7 @@ class ExtJointCal(JointCal):
 
         self.mk_sf()
         self.zero = ttk.Button(self.sf, text=f"Set {self.name} to Zero", command=self.zero_joint)
-        self.pins_label = ttk.Label(self.sf,text="TODO pins")
+        self.pins_label = ttk.Label(self.sf, text="TODO pins")
         util.hgrid(self.sf)
 
         """
@@ -125,16 +128,14 @@ class ExtJointCal(JointCal):
         raise Exception
 
 
-
 def cal(command, msg="", joint=None):
     """basic calibrate"""
 
     assert msg or joint
     msg = f"{joint.name}" if not msg else msg
-    response = COM.serial_write(command)
+    response = COM.write(command)
     msg = handle_response2(response, msg)
     log_message(msg)
-
 
 
 def cal_joint(idx):
@@ -154,7 +155,7 @@ def cal_joint(idx):
     ]
     suffix = mk_suffix(mode="calibration")
     command = commands[idx] + suffix
-    cal(command, joint=JointCTRL.active[idx] )
+    cal(command, joint=JointCTRL.active[idx])
 
 
 def mk_suffix(mode="calibration"):
@@ -170,7 +171,6 @@ def mk_suffix(mode="calibration"):
     return suffix
 
 
-
 def stopProg():
     """see exc/execution.py 110"""
     pass
@@ -179,7 +179,7 @@ def stopProg():
 def log_message(msg):
     """docstring"""
 
-    print('msg:',msg)
+    print("msg:", msg)
     now = datetime.datetime.now().strftime("%B %d %Y - %I:%M%p")
     GUI.tabs["6"].ElogView.insert(tk.END, f"{now} - {msg}")
     value = GUI.tabs["6"].ElogView.get(0, tk.END)
@@ -207,30 +207,18 @@ def handle_response2(response, message):
     return msg
 
 
+def cal_all():
 
-def calRobotAll():
+    autocal = [J.vars["autocal"].get() for J in JointCal.active]
+    offsets = [J.vars["offset"].get() for J in JointCal.active]
 
-    ##### STAGE 1 ########
-    caloffs = [J.no_calibrate.get() for J in JointCTRL.main]
-    calstat = caloffs
-
-    command = f"LLA{caloffs[0]}B{caloffs[1]}C{caloffs[2]}D{caloffs[3]}E{caloffs[4]}F{caloffs[5]}G0H0I0{mk_suffix(mode='calibration')}\n"
+    prefix = "LL"
+    chars = list(string.ascii_uppercase[:18])
+    command = "".join([f"{a}{b}" for a, b in zip(chars, autocal + offsets)]) 
+    command = prefix + command + '\n'
 
     msg = "Stage 1 Auto"
     cal(command, msg)
-
-    ##### STAGE 2 ########
-    # NOTE maybe this is the other direction??
-    """
-    caloffs = [J.no_calibrate2.get() for J in JointCTRL.main]
-    calstat2 = caloffs
-    if CalStatVal2 > 0:
-
-        command = f"LLA{J1CalStatVal2}B{J2CalStatVal2}C{J3CalStatVal2}D{J4CalStatVal2}E{J5CalStatVal2}F{J6CalStatVal2}G0H0I0{mk_suffix(mode='calibration')}\n"
-
-        msg = "Stage 1 Auto"
-        cal(command, msg)
-    """
 
 
 def calRobotMid():
@@ -240,13 +228,13 @@ def calRobotMid():
 
 def correctPos():
     command = "CP\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
     display_position(response)
 
 
 def request_pos():
     command = "RP\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
     display_position(response)
 
 
@@ -258,7 +246,7 @@ def tool_frame():
 
     command = "".join([f"{a}{b}" for a, b in zip(chars, TF.values())])
     command = f"TF{command}\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
 
 
 def calExtAxis():
@@ -274,13 +262,13 @@ def calExtAxis():
 
     prefix = "CE"
     command = f"A{J7axisLimPos}B{J7rotation}C{J7steps}D{J8axisLimPos}E{J8rotation}F{J8steps}G{J9axisLimPos}H{J9rotation}I{J9steps}\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
 
 
 def zero(joint, command):
     """basic zero axis"""
 
-    response = COM.serial_write(command)
+    response = COM.write(command)
 
     # TODO: can you handle_response?
     text = f"{joint} Calibration Forced to Zero"
@@ -322,12 +310,12 @@ def send_pos():
     letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I"]
     command = "".join([f"{a}{b}" for a, b in zip(letters, angles)])
     command = f"SP{command}\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
 
 
 def CalZeroPos():
     command = "SPA0B0C0D0E0F0\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
     request_pos()
     almStatusLab.config(text="Calibration Forced to Zero", style="Warn.TLabel")
     almStatusLab2.config(text="Calibration Forced to Zero", style="Warn.TLabel")
@@ -337,7 +325,7 @@ def CalZeroPos():
 
 def CalRestPos():
     command = "SPA0B0C-89D0E0F0\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
     request_pos()
     COM.alarm("Calibration Forced to Vertical Rest Pos")
     message = "Calibration Forced to Vertical - this is for commissioning and testing - be careful!"
@@ -346,13 +334,17 @@ def CalRestPos():
 
 def ResetDrives():
     command = "RD" + "\n"
-    response = COM.serial_write(command)
+    response = COM.write(command)
     COM.alarm("DRIVES RESET - PLEASE CHECK CALIBRATION")
     request_pos()
 
 
 def display_position(response):
     """displays positional into"""
+
+    if response in [None, ""]:
+        return
+    handle_error(response)
 
     # TODO
     # cmdRecEntryField.delete(0, "end")
@@ -375,7 +367,7 @@ def display_position(response):
         #
         "speed_vio": "M",
         "debug": "N",
-        "flag": "O",
+        "flag": "O", # this is the error message
         #
         "J7": "P",
         "J8": "Q",
@@ -401,9 +393,11 @@ def display_position(response):
         F.slider.set(a)
 
     for k, A in AxisFrame.main.items():
-        pos = responses[k]
-        A.position = pos
-        A.label(pos)
+        A.position = float(responses[k])
+        A.label(A.position)
+
+    print('angles:',[int(J.angle) for J in JointCTRL.active])
+    print('pos:', {k:int(A.position) for k,A in AxisFrame.main.items()})
 
     # NOTE used in other files
     WC = "F" if float(JointCTRL.active[4].angle) > 0 else "N"
@@ -415,13 +409,11 @@ def display_position(response):
 
     EntryField.active["man"].label(debug)
 
-    pprint(responses)
+    # pprint(responses)
 
     load.save_cfg()
 
     if flag != "":
-        print(f"flag: {flag}")
-        print(f"len flag: {len(flag)}")
         handle_error(flag)
 
     if speed_vio == "1":
@@ -568,8 +560,6 @@ def SaveAndApplyCalibration():
     load.save_cfg()
 
 
-
-
 class SpeedValidator:
     """used in check_speed"""
 
@@ -631,6 +621,9 @@ def check_speed():
 
 def handle_error(response):
 
+    if response[0] != 'E': # if not error
+        return
+
     # TODO: are these 2 lines needed?
     # TODO yes ... but okay to remove for now.
     def record_response(response):
@@ -642,9 +635,9 @@ def handle_error(response):
     ##AXIS LIMIT ERROR
     if response[1:2] == "L":
 
-        for i, j in enumerate(joints):
+        for i, J in enumerate(JointCTRL.main):
             if response[i + 2 : i + 3] == "1":
-                log_message("{j.name} Axis Limit")
+                log_message("{J.name} Axis Limit")
 
         message = "Axis Limit Error - See Log"
         COM.alarm(message)
@@ -672,3 +665,5 @@ def handle_error(response):
             message = "Unknown Error"
         stopProg()
         log_message(message)
+
+    print()
