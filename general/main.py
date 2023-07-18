@@ -86,10 +86,10 @@ def main():
 
     GUI.use_xbox = 0
 
-    COM(startup)
-    load.load_cfg()
+    # COM(startup)
+    # load.load_cfg()
 
-    COM.set()
+    # COM.set()
 
     def limit():
         """docstring"""
